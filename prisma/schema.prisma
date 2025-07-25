@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CLIENT
+  STUDIO
+  ADMIN
+}
+
+model User {
+  id        String    @id @default(cuid())
+  name      String
+  email     String    @unique
+  password  String?
+  role      Role      @default(CLIENT)
+  points    Int       @default(0)
+  badges    String   @default("")
+  createdAt DateTime  @default(now())
+  bookings  Booking[] // as client
+  studio    Studio?   // if studio user
+  reviews   Review[]  // user reviews
+}
+
+model Studio {
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  name        String
+  description String?
+  location    String?
+  photos    String   @default("")
+  approved    Boolean   @default(false)
+  services    Service[]
+  bookings    Booking[] // as provider
+  user        User      @relation(fields: [userId], references: [id])
+  reviews     Review[]  // studio reviews
+}
+
+
+model Service {
+  id          String @id @default(cuid())
+  studioId    String
+  title       String
+  description String
+  price       Float
+  duration    Int // duration in minutes (suggested)
+
+  studio   Studio    @relation(fields: [studioId], references: [id])
+  bookings Booking[] // renamed to plural to follow convention
+}
+
+model Booking {
+  id          String   @id @default(cuid())
+  clientId    String
+  studioId    String
+  serviceId   String
+  datetime    DateTime
+  status      String   @default("pending") // pending, accepted, canceled
+  invoiceLink String?
+  createdAt   DateTime @default(now())
+
+  client  User    @relation(fields: [clientId], references: [id])
+  studio  Studio  @relation(fields: [studioId], references: [id])
+  service Service @relation(fields: [serviceId], references: [id])
+  review  Review?
+}
+
+model Review {
+  id        String @id @default(cuid())
+  bookingId String @unique
+  rating    Int
+  comment   String
+  userId    String
+  studioId  String
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+  studio  Studio  @relation(fields: [studioId], references: [id])
+}
