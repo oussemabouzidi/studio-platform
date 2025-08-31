@@ -3,7 +3,10 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --font-special-gothic: 'Special Gothic Expanded One';
+  --font-special-gothic-regular: 'Special Gothic', sans-serif;
 }
+
 
 @theme inline {
   --color-background: var(--background);
@@ -12,10 +15,40 @@
   --font-mono: var(--font-geist-mono);
 }
 
+@theme inline {
+  --animate-aurora: aurora 60s linear infinite;
+
+  @keyframes aurora {
+    from {
+      background-position:
+        50% 50%,
+        50% 50%;
+    }
+
+    to {
+      background-position:
+        350% 50%,
+        350% 50%;
+    }
+  }
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+  }
+}
+
+@layer base {
+  .font-special {
+    font-family: var(--font-special-gothic), -apple-system, sans-serif;
+    font-stretch: expanded;
+    letter-spacing: 0.5px;
+  }
+  .font-special-regular {
+    font-family: var(--font-special-gothic-regular), -apple-system, sans-serif;
+    letter-spacing: 0.25px;
   }
 }
 
