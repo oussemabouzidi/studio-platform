@@ -4,12 +4,12 @@ import React, { useEffect, useState } from 'react';
 import { FaHeart, FaSearch, FaFilter, FaArrowLeft } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { specialGothic } from '@/app/fonts';
-import StudioCardGrid from '@/app/components/StudioCardGrid';
 import { Studio } from '../../types';
 import { getFavoriteStudio, getMiniProfile } from '../../service/api';
-import ArtistProfileDropdown from '@/app/components/ArtistProfileDropdown ';
 import NotificationDropdown from '@/app/components/NotificationDropdown';
+import { specialGothic } from '@/app/fonts';
+import StudioCardGrid from '@/app/components/StudioCardGrid';
+import ArtistProfileDropdown from '@/app/components/ArtistProfileDropdown ';
 
 const FavoritesPage = () => {
   const router = useRouter();

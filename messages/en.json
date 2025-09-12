@@ -1,0 +1,277 @@
+{
+  "HomePage": {
+    "navigation": {
+      "studios": "Studios",
+      "howItWorks": "How It Works ?",
+      "contact": "Contact",
+      "getStarted": "Get Started"
+    },
+    "heroSection": {
+      "titlePart1": "Your",
+      "titleHighlight1": "Next",
+      "titlePart2": "Recording Studio",
+      "titlePart3": "Found in",
+      "titleHighlight2": "Minutes",
+      "description": "Discover the best recording spaces near you, book sessions instantly, and create your next masterpiece, all in 1 place",
+      "findStudio": "Find a Studio",
+      "joinStudio": "Join as a Studio"
+    },
+    "howItWorks": {
+      "title": "How It Works ?",
+      "subtitle": "Simple steps to create, discover, and book recording sessions",
+      "step1": {
+        "number": "1",
+        "title": "Sign Up",
+        "description": "Create an account as an artist or studio owner in just a few clicks."
+      },
+      "step2": {
+        "number": "2",
+        "title": "Discover or Offer",
+        "description": "Artists find perfect studios, studios showcase their services and spaces."
+      },
+      "step3": {
+        "number": "3",
+        "title": "Book & Create",
+        "description": "Book sessions instantly, manage your calendar, and focus on creating."
+      }
+    },
+    "forArtistsStudios": {
+      "title": "For Artists and Studios",
+      "subtitle": "Dedicated experiences tailored for music creators and recording spaces",
+      "artists": {
+        "title": "Artists",
+        "description": "Everything you need to find, book, and create in the perfect studio environment.",
+        "features": {
+          "discover": {
+            "title": "Discover Studios",
+            "description": "Find the perfect recording space with detailed filters and reviews"
+          },
+          "booking": {
+            "title": "Instant Booking",
+            "description": "Reserve studio time 24/7 with real-time availability"
+          },
+          "manage": {
+            "title": "Manage Sessions",
+            "description": "Track upcoming bookings, history, and payments in one place"
+          }
+        },
+        "cta": "Start Creating Today"
+      },
+      "studios": {
+        "title": "Studios",
+        "description": "Showcase your space, manage bookings, and connect with talented artists.",
+        "features": {
+          "profile": {
+            "title": "Create Your Profile",
+            "description": "Showcase your studio with photos, amenities, and services"
+          },
+          "management": {
+            "title": "Booking Management",
+            "description": "Handle reservations, payments, and scheduling efficiently"
+          },
+          "growth": {
+            "title": "Grow Your Business",
+            "description": "Reach new clients and maximize your studio's potential"
+          }
+        },
+        "cta": "List Your Studio"
+      }
+    },
+    "featuredStudios": {
+      "title": "Featured Studios",
+      "subtitle": "Top-rated studios loved by artists worldwide",
+      "viewStudio": "View Studio"
+    },
+    "testimonials": {
+      "title": "What Our Community Says",
+      "subtitle": "Real experiences from artists and studios using Audio Alchemic"
+    },
+    "gamification": {
+      "badge": "New Feature",
+      "title": "Earn Badges for Every Booking!",
+      "description": "Unlock special discounts, priority booking, and exclusive perks as you create more music",
+      "cta": "Learn About Rewards"
+    },
+    "footer": {
+      "description": "Connecting artists with perfect recording spaces since 2025.",
+      "company": {
+        "title": "Company",
+        "links": ["About Us", "Careers", "Blog", "Press"]
+      },
+      "resources": {
+        "title": "Resources",
+        "links": ["Help Center", "Community", "Studio Resources", "Artist Resources"]
+      },
+      "legal": {
+        "title": "Legal",
+        "links": ["Terms", "Privacy", "Cookie Policy", "Licensing"]
+      },
+      "copyright": "© 2025 Audio Alchemic. All rights reserved.",
+      "language": {
+        "label": "Language:",
+        "options": ["English", "Français"]
+      }
+    }
+  },
+  "CreateAccountPage": {
+    "title": "Create Account",
+    "subtitle": "Join our community of creators",
+    "form": {
+      "firstName": {
+        "label": "First Name",
+        "placeholder": "John"
+      },
+      "lastName": {
+        "label": "Last Name",
+        "placeholder": "Doe"
+      },
+      "email": {
+        "label": "Email Address",
+        "placeholder": "your@email.com"
+      },
+      "password": {
+        "label": "Password",
+        "placeholder": "••••••••",
+        "hint": "Minimum 6 characters"
+      },
+      "confirmPassword": {
+        "label": "Confirm Password",
+        "placeholder": "••••••••",
+        "error": "Passwords do not match"
+      },
+      "validation": {
+        "required": "Please fill in all fields",
+        "passwordMismatch": "Passwords do not match",
+        "passwordLength": "Password should be at least 6 characters long"
+      },
+      "submitButton": "Create Account",
+      "loadingText": "Creating Account..."
+    },
+    "emailVerification": {
+      "title": "Check Your Email!",
+      "message": "We've sent a verification link to your email address",
+      "continueButton": "Continue to Account Setup"
+    },
+    "accountType": {
+      "title": "Select Account Type",
+      "subtitle": "Choose how you'll use our platform",
+      "artist": {
+        "title": "Artist",
+        "description": "I create music and content"
+      },
+      "studio": {
+        "title": "Studio",
+        "description": "I represent a studio or label"
+      },
+      "backButton": "Back to Email Confirmation"
+    },
+    "loginPrompt": {
+      "text": "Already have an account?",
+      "link": "Sign In"
+    }
+  }
+  ,
+  "StudioDetailsPage": {
+    "notFoundTitle": "Studio Not Found",
+    "notFoundDescription": "The studio you're looking for doesn't exist or has been removed.",
+    "rules": "Studio Rules",
+    "cancellationPolicy": "Cancellation Policy",
+    "servicesPricing": "Services & Pricing",
+    "equipment": "Studio Equipment",
+    "amenities": "Amenities & Facilities",
+    "customerReviews": "Customer Reviews",
+    "addYourReview": "Add Your Review",
+    "yourRating": "Your Rating",
+    "yourReview": "Your Review",
+    "you": "You",
+    "bookingDetails": "Booking Details",
+    "startingPrice": "Starting Price",
+    "availability": "Availability",
+    "studioTypes": "Studio Types",
+    "contactInformation": "Contact Information",
+    "email": "Email",
+    "phone": "Phone",
+    "website": "Website"
+  },
+  "StudioDashboardPage": {
+    "manageBookings": "Manage Bookings",
+    "table": {
+      "artist": "Artist",
+      "service": "Service",
+      "dateTime": "Date & Time",
+      "price": "Price",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "manageServices": "Manage Services",
+    "form": {
+      "serviceName": "Service Name",
+      "price": "Price",
+      "perHour": "per hour",
+      "perSession": "per session",
+      "perProject": "per project",
+      "maxCapacity": "Max Capacity",
+      "description": "Description",
+      "availableDays": "Available Days",
+      "tags": "Tags",
+      "duration": "Duration:",
+      "maxCapacityShort": "Max Capacity:",
+      "availableTimes": "Available Times:",
+      "tagsShort": "Tags:"
+    },
+    "earningsOverview": "Earnings Overview",
+    "totalEarnings": "Total Earnings",
+    "allTime": "All time",
+    "pendingPayments": "Pending Payments",
+    "awaitingClearance": "Awaiting clearance",
+    "completedEarnings": "Completed Earnings",
+    "clearedPayments": "Cleared payments",
+    "thisMonth": "This Month",
+    "recentTransactions": "Recent Transactions",
+    "transactionsTable": {
+      "bookingId": "Booking ID",
+      "artist": "Artist",
+      "service": "Service",
+      "date": "Date",
+      "amount": "Amount",
+      "status": "Status"
+    },
+    "studioReviews": "Studio Reviews"
+  },
+  "CreateAccountArtistPage": {
+    "profilePhoto": "Profile Photo",
+    "noImage": "No image",
+    "fullName": "Full Name*",
+    "artistName": "Artist Name*",
+    "location": "Location*",
+    "bio": "Bio*",
+    "contactInformation": "Contact Information",
+    "email": "Email*",
+    "phoneNumber": "Phone Number",
+    "instagram": "Instagram",
+    "soundcloud": "SoundCloud",
+    "youtube": "YouTube",
+    "spotify": "Spotify",
+    "musicalGenres": "Musical Genres",
+    "instrumentsPlayed": "Instruments Played",
+    "demoTracks": "Demo Tracks (4 max)",
+    "noDemoTracks": "No demo tracks uploaded",
+    "collaborators": "Collaborators",
+    "languagesSpoken": "Languages Spoken",
+    "experience": "Experience",
+    "experienceLevel": "Experience Level",
+    "yearsOfExperience": "Years of Experience",
+    "availability": "Availability",
+    "portfolio": "Portfolio",
+    "url": "URL*",
+    "type": "Type",
+    "typeOptions": {
+      "image": "Image",
+      "video": "Video",
+      "audio": "Audio"
+    },
+    "title": "Title*",
+    "yourPortfolio": "Your Portfolio",
+    "noPortfolioItems": "No portfolio items added yet"
+  }
+}

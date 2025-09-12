@@ -1,0 +1,220 @@
+{
+  "HomePage": {
+    "navigation": {
+      "studios": "Estudios",
+      "howItWorks": "¿Cómo Funciona?",
+      "contact": "Contacto",
+      "getStarted": "Comenzar"
+    },
+    "heroSection": {
+      "titlePart1": "Tu",
+      "titleHighlight1": "Próximo",
+      "titlePart2": "Estudio de Grabación",
+      "titlePart3": "Encontrado en",
+      "titleHighlight2": "Minutos",
+      "description": "Descubre los mejores espacios de grabación cerca de ti, reserva sesiones al instante y crea tu próxima obra maestra, todo en un solo lugar",
+      "findStudio": "Encontrar un Estudio",
+      "joinStudio": "Unirse como Estudio"
+    },
+    "howItWorks": {
+      "title": "¿Cómo Funciona?",
+      "subtitle": "Pasos simples para crear, descubrir y reservar sesiones de grabación",
+      "step1": {
+        "number": "1",
+        "title": "Registrarse",
+        "description": "Crea una cuenta como artista o propietario de estudio en solo unos clics."
+      },
+      "step2": {
+        "number": "2",
+        "title": "Descubrir u Ofrecer",
+        "description": "Artistas encuentran estudios perfectos, estudios muestran sus servicios y espacios."
+      },
+      "step3": {
+        "number": "3",
+        "title": "Reservar y Crear",
+        "description": "Reserva sesiones al instante, gestiona tu calendario y concéntrate en crear."
+      }
+    },
+    "forArtistsStudios": {
+      "title": "Para Artistas y Estudios",
+      "subtitle": "Experiencias dedicadas adaptadas para creadores musicales y espacios de grabación",
+      "artists": {
+        "title": "Artistas",
+        "description": "Todo lo que necesitas para encontrar, reservar y crear en el entorno de estudio perfecto.",
+        "features": {
+          "discover": {
+            "title": "Descubrir Estudios",
+            "description": "Encuentra el espacio de grabación perfecto con filtros detallados y reseñas"
+          },
+          "booking": {
+            "title": "Reserva Instantánea",
+            "description": "Reserva tiempo de estudio 24/7 con disponibilidad en tiempo real"
+          },
+          "manage": {
+            "title": "Gestionar Sesiones",
+            "description": "Realiza un seguimiento de próximas reservas, historial y pagos en un solo lugar"
+          }
+        },
+        "cta": "Comienza a Crear Hoy"
+      },
+      "studios": {
+        "title": "Estudios",
+        "description": "Muestra tu espacio, gestiona reservas y conéctate con artistas talentosos.",
+        "features": {
+          "profile": {
+            "title": "Crear Tu Perfil",
+            "description": "Muestra tu estudio con fotos, comodidades y servicios"
+          },
+          "management": {
+            "title": "Gestión de Reservas",
+            "description": "Maneja reservas, pagos y programación de manera eficiente"
+          },
+          "growth": {
+            "title": "Haz Crecer Tu Negocio",
+            "description": "Alcanza nuevos clientes y maximiza el potencial de tu estudio"
+          }
+        },
+        "cta": "Lista Tu Estudio"
+      }
+    },
+    "featuredStudios": {
+      "title": "Estudios Destacados",
+      "subtitle": "Estudios mejor valorados amados por artistas de todo el mundo",
+      "viewStudio": "Ver Estudio"
+    },
+    "testimonials": {
+      "title": "Lo Que Dice Nuestra Comunidad",
+      "subtitle": "Experiencias reales de artistas y estudios que usan Audio Alchemic"
+    },
+    "gamification": {
+      "badge": "Nueva Función",
+      "title": "¡Gana Insignias por Cada Reserva!",
+      "description": "Desbloquea descuentos especiales, reservas prioritarias y beneficios exclusivos mientras creas más música",
+      "cta": "Conoce las Recompensas"
+    },
+    "footer": {
+      "description": "Conectando artistas con espacios de grabación perfectos desde 2025.",
+      "company": {
+        "title": "Empresa",
+        "links": ["Sobre Nosotros", "Carreras", "Blog", "Prensa"]
+      },
+      "resources": {
+        "title": "Recursos",
+        "links": ["Centro de Ayuda", "Comunidad", "Recursos para Estudios", "Recursos para Artistas"]
+      },
+      "legal": {
+        "title": "Legal",
+        "links": ["Términos", "Privacidad", "Política de Cookies", "Licencias"]
+      },
+      "copyright": "© 2025 Audio Alchemic. Todos los derechos reservados.",
+      "language": {
+        "label": "Idioma:",
+        "options": ["Inglés", "Español"]
+      }
+    }
+  }
+  ,
+  "StudioDetailsPage": {
+    "notFoundTitle": "Estudio no encontrado",
+    "notFoundDescription": "El estudio que buscas no existe o ha sido eliminado.",
+    "rules": "Reglas del Estudio",
+    "cancellationPolicy": "Política de Cancelación",
+    "servicesPricing": "Servicios y Precios",
+    "equipment": "Equipo del Estudio",
+    "amenities": "Servicios y Instalaciones",
+    "customerReviews": "Reseñas de Clientes",
+    "addYourReview": "Añade tu reseña",
+    "yourRating": "Tu puntuación",
+    "yourReview": "Tu reseña",
+    "you": "Tú",
+    "bookingDetails": "Detalles de la Reserva",
+    "startingPrice": "Precio Inicial",
+    "availability": "Disponibilidad",
+    "studioTypes": "Tipos de Estudio",
+    "contactInformation": "Información de Contacto",
+    "email": "Correo electrónico",
+    "phone": "Teléfono",
+    "website": "Sitio web"
+  },
+  "StudioDashboardPage": {
+    "manageBookings": "Gestionar Reservas",
+    "table": {
+      "artist": "Artista",
+      "service": "Servicio",
+      "dateTime": "Fecha y Hora",
+      "price": "Precio",
+      "status": "Estado",
+      "actions": "Acciones"
+    },
+    "manageServices": "Gestionar Servicios",
+    "form": {
+      "serviceName": "Nombre del Servicio",
+      "price": "Precio",
+      "perHour": "por hora",
+      "perSession": "por sesión",
+      "perProject": "por proyecto",
+      "maxCapacity": "Capacidad Máxima",
+      "description": "Descripción",
+      "availableDays": "Días Disponibles",
+      "tags": "Etiquetas",
+      "duration": "Duración:",
+      "maxCapacityShort": "Capacidad Máxima:",
+      "availableTimes": "Horarios Disponibles:",
+      "tagsShort": "Etiquetas:"
+    },
+    "earningsOverview": "Resumen de Ganancias",
+    "totalEarnings": "Ganancias Totales",
+    "allTime": "Todo el tiempo",
+    "pendingPayments": "Pagos Pendientes",
+    "awaitingClearance": "En espera de liquidación",
+    "completedEarnings": "Ganancias Completadas",
+    "clearedPayments": "Pagos liquidados",
+    "thisMonth": "Este Mes",
+    "recentTransactions": "Transacciones Recientes",
+    "transactionsTable": {
+      "bookingId": "ID de Reserva",
+      "artist": "Artista",
+      "service": "Servicio",
+      "date": "Fecha",
+      "amount": "Importe",
+      "status": "Estado"
+    },
+    "studioReviews": "Reseñas del Estudio"
+  },
+  "CreateAccountArtistPage": {
+    "profilePhoto": "Foto de Perfil",
+    "noImage": "Sin imagen",
+    "fullName": "Nombre Completo*",
+    "artistName": "Nombre Artístico*",
+    "location": "Ubicación*",
+    "bio": "Biografía*",
+    "contactInformation": "Información de Contacto",
+    "email": "Correo electrónico*",
+    "phoneNumber": "Número de Teléfono",
+    "instagram": "Instagram",
+    "soundcloud": "SoundCloud",
+    "youtube": "YouTube",
+    "spotify": "Spotify",
+    "musicalGenres": "Géneros Musicales",
+    "instrumentsPlayed": "Instrumentos Tocados",
+    "demoTracks": "Pistas Demo (máx. 4)",
+    "noDemoTracks": "No se han subido pistas demo",
+    "collaborators": "Colaboradores",
+    "languagesSpoken": "Idiomas Hablados",
+    "experience": "Experiencia",
+    "experienceLevel": "Nivel de Experiencia",
+    "yearsOfExperience": "Años de Experiencia",
+    "availability": "Disponibilidad",
+    "portfolio": "Portafolio",
+    "url": "URL*",
+    "type": "Tipo",
+    "typeOptions": {
+      "image": "Imagen",
+      "video": "Video",
+      "audio": "Audio"
+    },
+    "title": "Título*",
+    "yourPortfolio": "Tu Portafolio",
+    "noPortfolioItems": "Aún no se han añadido elementos al portafolio"
+  }
+}

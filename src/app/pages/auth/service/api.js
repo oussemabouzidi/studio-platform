@@ -1,4 +1,5 @@
-const api_base_url = `http://localhost:8800/api/auth`;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+const api_base_url = `${API_BASE_URL}/auth`;
 
 
 export async function login(email, password) {

@@ -1,0 +1,220 @@
+{
+  "HomePage": {
+    "navigation": {
+      "studios": "录音棚",
+      "howItWorks": "使用指南",
+      "contact": "联系我们",
+      "getStarted": "开始使用"
+    },
+    "heroSection": {
+      "titlePart1": "数分钟内",
+      "titleHighlight1": "找到",
+      "titlePart2": "您的下一个",
+      "titlePart3": "",
+      "titleHighlight2": "录音工作室",
+      "description": "发现您附近的最佳录音空间，即时预约录制时段，一站式创作您的下一个杰作",
+      "findStudio": "寻找录音棚",
+      "joinStudio": "以工作室身份加入"
+    },
+    "howItWorks": {
+      "title": "使用指南",
+      "subtitle": "简单几步即可创建、发现和预约录音时段",
+      "step1": {
+        "number": "1",
+        "title": "注册账号",
+        "description": "只需点击几下即可创建艺术家或工作室所有者账户"
+      },
+      "step2": {
+        "number": "2",
+        "title": "发现或提供",
+        "description": "艺术家找到完美工作室，工作室展示其服务与空间"
+      },
+      "step3": {
+        "number": "3",
+        "title": "预约与创作",
+        "description": "即时预约时段，管理您的日历，专注于创作"
+      }
+    },
+    "forArtistsStudios": {
+      "title": "为艺术家和工作室服务",
+      "subtitle": "为音乐创作者和录音空间量身定制的专属体验",
+      "artists": {
+        "title": "艺术家",
+        "description": "在完美的工作室环境中寻找、预约和创作所需的一切",
+        "features": {
+          "discover": {
+            "title": "探索工作室",
+            "description": "通过详细的筛选条件和评价找到完美的录音空间"
+          },
+          "booking": {
+            "title": "即时预约",
+            "description": "根据实时可用性24/7预约工作室时间"
+          },
+          "manage": {
+            "title": "管理时段",
+            "description": "在一个地方跟踪即将到来的预约、历史记录和付款"
+          }
+        },
+        "cta": "立即开始创作"
+      },
+      "studios": {
+        "title": "工作室",
+        "description": "展示您的空间，管理预约，与才华横溢的艺术家联系",
+        "features": {
+          "profile": {
+            "title": "创建资料",
+            "description": "通过照片、设施和服务展示您的工作室"
+          },
+          "management": {
+            "title": "预约管理",
+            "description": "高效处理预订、付款和日程安排"
+          },
+          "growth": {
+            "title": "业务增长",
+            "description": "接触新客户并最大化您工作室的潜力"
+          }
+        },
+        "cta": "列出您的工作室"
+      }
+    },
+    "featuredStudios": {
+      "title": "推荐工作室",
+      "subtitle": "深受全球艺术家喜爱的高评分工作室",
+      "viewStudio": "查看工作室"
+    },
+    "testimonials": {
+      "title": "用户评价",
+      "subtitle": "使用Audio Alchemic的艺术家和工作室的真实体验"
+    },
+    "gamification": {
+      "badge": "新功能",
+      "title": "每次预约都可获得徽章！",
+      "description": "随着您创作更多音乐，解锁特别折扣、优先预约和专属特权",
+      "cta": "了解奖励计划"
+    },
+    "footer": {
+      "description": "自2025年起连接艺术家与完美录音空间",
+      "company": {
+        "title": "公司",
+        "links": ["关于我们", "招聘信息", "博客", "新闻"]
+      },
+      "resources": {
+        "title": "资源",
+        "links": ["帮助中心", "社区", "工作室资源", "艺术家资源"]
+      },
+      "legal": {
+        "title": "法律",
+        "links": ["条款", "隐私", "Cookie政策", "许可"]
+      },
+      "copyright": "© 2025 Audio Alchemic. 保留所有权利",
+      "language": {
+        "label": "语言：",
+        "options": ["英语", "中文"]
+      }
+    }
+  }
+  ,
+  "StudioDetailsPage": {
+    "notFoundTitle": "未找到工作室",
+    "notFoundDescription": "您要查找的工作室不存在或已被删除。",
+    "rules": "工作室规则",
+    "cancellationPolicy": "取消政策",
+    "servicesPricing": "服务与价格",
+    "equipment": "工作室设备",
+    "amenities": "便利设施",
+    "customerReviews": "用户评价",
+    "addYourReview": "添加您的评价",
+    "yourRating": "您的评分",
+    "yourReview": "您的评价",
+    "you": "您",
+    "bookingDetails": "预订详情",
+    "startingPrice": "起始价格",
+    "availability": "可用性",
+    "studioTypes": "工作室类型",
+    "contactInformation": "联系信息",
+    "email": "邮箱",
+    "phone": "电话",
+    "website": "网站"
+  },
+  "StudioDashboardPage": {
+    "manageBookings": "管理预订",
+    "table": {
+      "artist": "艺术家",
+      "service": "服务",
+      "dateTime": "日期与时间",
+      "price": "价格",
+      "status": "状态",
+      "actions": "操作"
+    },
+    "manageServices": "管理服务",
+    "form": {
+      "serviceName": "服务名称",
+      "price": "价格",
+      "perHour": "每小时",
+      "perSession": "每次",
+      "perProject": "每项目",
+      "maxCapacity": "最大容量",
+      "description": "描述",
+      "availableDays": "可用日期",
+      "tags": "标签",
+      "duration": "时长:",
+      "maxCapacityShort": "最大容量:",
+      "availableTimes": "可用时间:",
+      "tagsShort": "标签:"
+    },
+    "earningsOverview": "收益概览",
+    "totalEarnings": "总收益",
+    "allTime": "全部时间",
+    "pendingPayments": "待处理付款",
+    "awaitingClearance": "等待结算",
+    "completedEarnings": "已完成收益",
+    "clearedPayments": "已结算付款",
+    "thisMonth": "本月",
+    "recentTransactions": "最近交易",
+    "transactionsTable": {
+      "bookingId": "预订ID",
+      "artist": "艺术家",
+      "service": "服务",
+      "date": "日期",
+      "amount": "金额",
+      "status": "状态"
+    },
+    "studioReviews": "工作室评论"
+  },
+  "CreateAccountArtistPage": {
+    "profilePhoto": "个人头像",
+    "noImage": "无图片",
+    "fullName": "全名*",
+    "artistName": "艺名*",
+    "location": "所在地*",
+    "bio": "个人简介*",
+    "contactInformation": "联系信息",
+    "email": "邮箱*",
+    "phoneNumber": "电话号码",
+    "instagram": "Instagram",
+    "soundcloud": "SoundCloud",
+    "youtube": "YouTube",
+    "spotify": "Spotify",
+    "musicalGenres": "音乐流派",
+    "instrumentsPlayed": "演奏乐器",
+    "demoTracks": "演示曲目（最多4个）",
+    "noDemoTracks": "尚未上传演示曲目",
+    "collaborators": "合作者",
+    "languagesSpoken": "使用语言",
+    "experience": "经验",
+    "experienceLevel": "经验水平",
+    "yearsOfExperience": "经验年限",
+    "availability": "可用性",
+    "portfolio": "作品集",
+    "url": "URL*",
+    "type": "类型",
+    "typeOptions": {
+      "image": "图片",
+      "video": "视频",
+      "audio": "音频"
+    },
+    "title": "标题*",
+    "yourPortfolio": "您的作品集",
+    "noPortfolioItems": "尚未添加作品集项目"
+  }
+}

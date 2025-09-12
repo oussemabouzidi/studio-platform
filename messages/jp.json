@@ -1,0 +1,220 @@
+{
+  "HomePage": {
+    "navigation": {
+      "studios": "スタジオ",
+      "howItWorks": "使い方",
+      "contact": "お問い合わせ",
+      "getStarted": "始める"
+    },
+    "heroSection": {
+      "titlePart1": "あなたの",
+      "titleHighlight1": "次の",
+      "titlePart2": "レコーディングスタジオが",
+      "titlePart3": "",
+      "titleHighlight2": "数分で見つかります",
+      "description": "近くの最高のレコーディングスペースを発見し、すぐにセッションを予約して、次の傑作をすべて1か所で創作できます",
+      "findStudio": "スタジオを探す",
+      "joinStudio": "スタジオとして登録"
+    },
+    "howItWorks": {
+      "title": "使い方",
+      "subtitle": "レコーディングセッションの作成、発見、予約までの簡単なステップ",
+      "step1": {
+        "number": "1",
+        "title": "サインアップ",
+        "description": "数クリックでアーティストまたはスタジオオーナーとしてアカウントを作成します。"
+      },
+      "step2": {
+        "number": "2",
+        "title": "発見または提供",
+        "description": "アーティストは完璧なスタジオを見つけ、スタジオはサービスとスペースを紹介します。"
+      },
+      "step3": {
+        "number": "3",
+        "title": "予約と創作",
+        "description": "すぐにセッションを予約し、カレンダーを管理して創作に集中できます。"
+      }
+    },
+    "forArtistsStudios": {
+      "title": "アーティストとスタジオ向け",
+      "subtitle": "音楽クリエイターとレコーディングスペースに特化した体験",
+      "artists": {
+        "title": "アーティスト",
+        "description": "完璧なスタジオ環境で、発見、予約、創作に必要なすべてが揃っています。",
+        "features": {
+          "discover": {
+            "title": "スタジオを発見",
+            "description": "詳細なフィルターとレビューで完璧なレコーディングスペースを見つけられます"
+          },
+          "booking": {
+            "title": "即時予約",
+            "description": "リアルタイムの空き状況で24時間いつでもスタジオを予約できます"
+          },
+          "manage": {
+            "title": "セッション管理",
+            "description": "今後の予約、履歴、支払いを一か所で管理できます"
+          }
+        },
+        "cta": "今日から創作を始めよう"
+      },
+      "studios": {
+        "title": "スタジオ",
+        "description": "あなたのスペースを紹介し、予約を管理し、才能あるアーティストとつながれます。",
+        "features": {
+          "profile": {
+            "title": "プロファイル作成",
+            "description": "写真、設備、サービスでスタジオを紹介できます"
+          },
+          "management": {
+            "title": "予約管理",
+            "description": "予約、支払い、スケジュールを効率的に処理できます"
+          },
+          "growth": {
+            "title": "ビジネスの成長",
+            "description": "新しいクライアントにリーチし、スタジオの可能性を最大化できます"
+          }
+        },
+        "cta": "スタジオを掲載する"
+      }
+    },
+    "featuredStudios": {
+      "title": "注目のスタジオ",
+      "subtitle": "世界中のアーティストに愛される高評価のスタジオ",
+      "viewStudio": "スタジオを見る"
+    },
+    "testimonials": {
+      "title": "コミュニティの声",
+      "subtitle": "Audio Alchemicを利用するアーティストとスタジオの実際の体験"
+    },
+    "gamification": {
+      "badge": "新機能",
+      "title": "予約ごとにバッジを獲得！",
+      "description": "より多くの音楽を創作するほど、特別割引、優先予約、限定特典がアンロックされます",
+      "cta": "特典について詳しく見る"
+    },
+    "footer": {
+      "description": "2025年からアーティストと完璧なレコーディングスペースをつなぎ続けています。",
+      "company": {
+        "title": "企業情報",
+        "links": ["私たちについて", "採用情報", "ブログ", "プレス"]
+      },
+      "resources": {
+        "title": "リソース",
+        "links": ["ヘルプセンター", "コミュニティ", "スタジオリソース", "アーティストリソース"]
+      },
+      "legal": {
+        "title": "法的情報",
+        "links": ["利用規約", "プライバシー", "Cookieポリシー", "ライセンス"]
+      },
+      "copyright": "© 2025 Audio Alchemic. All rights reserved.",
+      "language": {
+        "label": "言語:",
+        "options": ["英語", "日本語"]
+      }
+    }
+  }
+  ,
+  "StudioDetailsPage": {
+    "notFoundTitle": "スタジオが見つかりません",
+    "notFoundDescription": "お探しのスタジオは存在しないか、削除されました。",
+    "rules": "スタジオのルール",
+    "cancellationPolicy": "キャンセルポリシー",
+    "servicesPricing": "サービスと料金",
+    "equipment": "スタジオ設備",
+    "amenities": "アメニティと設備",
+    "customerReviews": "カスタマーレビュー",
+    "addYourReview": "レビューを追加",
+    "yourRating": "あなたの評価",
+    "yourReview": "あなたのレビュー",
+    "you": "あなた",
+    "bookingDetails": "予約詳細",
+    "startingPrice": "開始価格",
+    "availability": "空き状況",
+    "studioTypes": "スタジオの種類",
+    "contactInformation": "連絡先情報",
+    "email": "メール",
+    "phone": "電話",
+    "website": "ウェブサイト"
+  },
+  "StudioDashboardPage": {
+    "manageBookings": "予約を管理",
+    "table": {
+      "artist": "アーティスト",
+      "service": "サービス",
+      "dateTime": "日付と時間",
+      "price": "価格",
+      "status": "ステータス",
+      "actions": "操作"
+    },
+    "manageServices": "サービスを管理",
+    "form": {
+      "serviceName": "サービス名",
+      "price": "価格",
+      "perHour": "時間あたり",
+      "perSession": "セッションあたり",
+      "perProject": "プロジェクトあたり",
+      "maxCapacity": "最大収容人数",
+      "description": "説明",
+      "availableDays": "利用可能日",
+      "tags": "タグ",
+      "duration": "所要時間:",
+      "maxCapacityShort": "最大収容人数:",
+      "availableTimes": "利用可能時間:",
+      "tagsShort": "タグ:"
+    },
+    "earningsOverview": "収益概要",
+    "totalEarnings": "総収益",
+    "allTime": "全期間",
+    "pendingPayments": "保留中の支払い",
+    "awaitingClearance": "承認待ち",
+    "completedEarnings": "完了した収益",
+    "clearedPayments": "承認済みの支払い",
+    "thisMonth": "今月",
+    "recentTransactions": "最近の取引",
+    "transactionsTable": {
+      "bookingId": "予約ID",
+      "artist": "アーティスト",
+      "service": "サービス",
+      "date": "日付",
+      "amount": "金額",
+      "status": "ステータス"
+    },
+    "studioReviews": "スタジオレビュー"
+  },
+  "CreateAccountArtistPage": {
+    "profilePhoto": "プロフィール写真",
+    "noImage": "画像なし",
+    "fullName": "氏名*",
+    "artistName": "アーティスト名*",
+    "location": "所在地*",
+    "bio": "自己紹介*",
+    "contactInformation": "連絡先情報",
+    "email": "メール*",
+    "phoneNumber": "電話番号",
+    "instagram": "Instagram",
+    "soundcloud": "SoundCloud",
+    "youtube": "YouTube",
+    "spotify": "Spotify",
+    "musicalGenres": "音楽ジャンル",
+    "instrumentsPlayed": "演奏できる楽器",
+    "demoTracks": "デモトラック（最大4件）",
+    "noDemoTracks": "デモトラックはアップロードされていません",
+    "collaborators": "コラボレーター",
+    "languagesSpoken": "話せる言語",
+    "experience": "経験",
+    "experienceLevel": "経験レベル",
+    "yearsOfExperience": "経験年数",
+    "availability": "空き状況",
+    "portfolio": "ポートフォリオ",
+    "url": "URL*",
+    "type": "種類",
+    "typeOptions": {
+      "image": "画像",
+      "video": "動画",
+      "audio": "音声"
+    },
+    "title": "タイトル*",
+    "yourPortfolio": "あなたのポートフォリオ",
+    "noPortfolioItems": "まだポートフォリオ項目が追加されていません"
+  }
+}

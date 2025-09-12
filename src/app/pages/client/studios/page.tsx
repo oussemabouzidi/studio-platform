@@ -9,6 +9,8 @@ import NotificationDropdown from '@/app/components/NotificationDropdown';
 import FavoritesLink from '@/app/components/FavoritesLink';
 import {getAllStudios, getBookingsByArtist, getMiniProfile} from '../service/api'
 import { Booking, Reviews, Studio } from '../types';
+import { useRouter } from "next/navigation";
+
 
 const StudiosPage = () => {
   const [studios, setStudios] = useState<Studio[]>([]);
@@ -90,6 +92,13 @@ const StudiosPage = () => {
     }
     fetchMiniProfile();
   }, []);
+
+
+  const router = useRouter();
+
+  const goToStudioBooking = (id: any) =>{
+      router.push(`/pages/client/studios/studio-details/${id}`);
+  }
 
   // Get recommended studios based on artist preferences
   const getRecommendedStudios = () => {
@@ -368,8 +377,8 @@ const StudiosPage = () => {
                           <span className="text-gray-500 mx-2">•</span>
                           <span className="text-purple-400 font-bold">${booking.studio.price}/hr</span>
                         </div>
-                        <button className="text-sm bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-xl transition-all">
-                          View Details
+                        <button onClick={goToStudioBooking(booking.studio.id)} className="text-sm bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-xl transition-all">
+                          View Studio Details
                         </button>
                       </div>
                     </div>
@@ -1360,7 +1369,7 @@ const StudiosPage = () => {
         }
         
         ::-webkit-scrollbar-thumb:hover {
-          background: rgba(极速126, 34, 206, 0.8);
+          background: rgba(126, 34, 206, 0.8);
         }
       `}</style>
     </div>

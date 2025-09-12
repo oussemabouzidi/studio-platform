@@ -15,7 +15,7 @@ const StudioCardGrid = ({ studios }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ">
       {studios.map((studio) => (
-        <Link href={`studios/studio-details/${studio.id}`} key={studio.id}>
+        <Link href={`/pages/client/studios/studio-details/${studio.id}`} key={studio.id}>
           <div 
           key={studio.id} 
           className="bg-neutral-400/20 hover:bg-neutral-400/30 backdrop-blur-md rounded-xl overflow-hidden transition-transform duration-300 hover:scale-[1.02] hover:shadow-lg border-2 border-neutral-400/20"

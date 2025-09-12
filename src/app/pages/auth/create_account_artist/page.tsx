@@ -1,13 +1,17 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { AuroraBackground } from '@/app/components/aurora-background';
 import { FaCheck, FaPlus, FaTrash, FaChevronLeft, FaPlay, FaPause, FaArrowRight, FaEnvelope, FaLock, FaUser, FaIdCard, FaMusic, FaMicrophone, FaGlobe, FaStar, FaArrowLeft } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
 import { createAccountArtist } from '../service/api';
-
+import { AuroraBackground } from '@/app/components/aurora-background';
 
 export default function CreateArtistAccountPage() {
+  // Predefined suggestions
+  const genreSuggestions = ['Rock', 'Pop', 'Jazz', 'Classical', 'Hip Hop', 'Rap', 'Country', 'Blues', 'Electronic', 'Metal', 'Punk', 'Reggae', 'Soul', 'Funk', 'R&B', 'Folk', 'Indie', 'Alternative', 'Latin', 'World'];
+  const instrumentSuggestions = ['Guitar', 'Piano', 'Bass', 'Drums', 'Violin', 'Cello', 'Flute', 'Saxophone', 'Trumpet', 'Clarinet', 'Harp', 'Vocals', 'Synthesizer', 'DJ Turntables', 'Harmonica', 'Accordion', 'Banjo', 'Mandolin', 'Ukulele', 'Organ'];
+  const languageSuggestions = ['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Russian', 'Chinese', 'Japanese', 'Korean', 'Arabic', 'Hindi', 'Bengali', 'Urdu', 'Turkish', 'Dutch', 'Swedish', 'Polish', 'Vietnamese', 'Thai'];
+
   type Demo = {
     file: string | ArrayBuffer | null;
     title: string;
@@ -39,9 +43,8 @@ export default function CreateArtistAccountPage() {
     portfolio: { url: string; title: string; type: 'image' | 'video' | 'audio' }[];
   };
 
-  const router = useRouter(); // Initialize router
+  const router = useRouter();
   
-
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormData>({
     fullName: '',
@@ -73,11 +76,53 @@ export default function CreateArtistAccountPage() {
   const [newCollaborator, setNewCollaborator] = useState('');
   const [newLanguage, setNewLanguage] = useState('');
   const [newPortfolioItem, setNewPortfolioItem] = useState({ url: '', title: '', type: 'image' as 'image' | 'video' | 'audio' });
+  const [filteredGenres, setFilteredGenres] = useState<string[]>([]);
+  const [filteredInstruments, setFilteredInstruments] = useState<string[]>([]);
+  const [filteredLanguages, setFilteredLanguages] = useState<string[]>([]);
+  const [showGenreSuggestions, setShowGenreSuggestions] = useState(false);
+  const [showInstrumentSuggestions, setShowInstrumentSuggestions] = useState(false);
+  const [showLanguageSuggestions, setShowLanguageSuggestions] = useState(false);
 
-  const avatarInputRef = useRef(null);
-  const demoInputRef = useRef(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const demoInputRef = useRef<HTMLInputElement>(null);
   const Router = useRouter();
   
+  // Filter suggestions based on input
+  useEffect(() => {
+    if (newGenre) {
+      setFilteredGenres(
+        genreSuggestions.filter(genre => 
+          genre.toLowerCase().includes(newGenre.toLowerCase())
+        )
+      );
+    } else {
+      setFilteredGenres([]);
+    }
+  }, [newGenre]);
+
+  useEffect(() => {
+    if (newInstrument) {
+      setFilteredInstruments(
+        instrumentSuggestions.filter(instrument => 
+          instrument.toLowerCase().includes(newInstrument.toLowerCase())
+        )
+      );
+    } else {
+      setFilteredInstruments([]);
+    }
+  }, [newInstrument]);
+
+  useEffect(() => {
+    if (newLanguage) {
+      setFilteredLanguages(
+        languageSuggestions.filter(language => 
+          language.toLowerCase().includes(newLanguage.toLowerCase())
+        )
+      );
+    } else {
+      setFilteredLanguages([]);
+    }
+  }, [newLanguage]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: string) => {
     const file = e.target.files?.[0];
@@ -155,13 +200,15 @@ export default function CreateArtistAccountPage() {
     }));
   };
 
-  const addGenre = () => {
-    if (newGenre && !formData.genres.includes(newGenre)) {
+  const addGenre = (genre?: string) => {
+    const genreToAdd = genre || newGenre;
+    if (genreToAdd && !formData.genres.includes(genreToAdd)) {
       setFormData(prev => ({
         ...prev,
-        genres: [...prev.genres, newGenre]
+        genres: [...prev.genres, genreToAdd]
       }));
       setNewGenre('');
+      setShowGenreSuggestions(false);
     }
   };
 
@@ -172,13 +219,15 @@ export default function CreateArtistAccountPage() {
     }));
   };
 
-  const addInstrument = () => {
-    if (newInstrument && !formData.instruments.includes(newInstrument)) {
+  const addInstrument = (instrument?: string) => {
+    const instrumentToAdd = instrument || newInstrument;
+    if (instrumentToAdd && !formData.instruments.includes(instrumentToAdd)) {
       setFormData(prev => ({
         ...prev,
-        instruments: [...prev.instruments, newInstrument]
+        instruments: [...prev.instruments, instrumentToAdd]
       }));
       setNewInstrument('');
+      setShowInstrumentSuggestions(false);
     }
   };
 
@@ -206,13 +255,15 @@ export default function CreateArtistAccountPage() {
     }));
   };
 
-  const addLanguage = () => {
-    if (newLanguage && !formData.languages.includes(newLanguage)) {
+  const addLanguage = (language?: string) => {
+    const languageToAdd = language || newLanguage;
+    if (languageToAdd && !formData.languages.includes(languageToAdd)) {
       setFormData(prev => ({
         ...prev,
-        languages: [...prev.languages, newLanguage]
+        languages: [...prev.languages, languageToAdd]
       }));
       setNewLanguage('');
+      setShowLanguageSuggestions(false);
     }
   };
 
@@ -240,8 +291,6 @@ export default function CreateArtistAccountPage() {
     }));
   };
 
-
-
   const handleSubmit = async () => {
     const id = localStorage.getItem("user_id");
     console.log(id)
@@ -260,23 +309,23 @@ export default function CreateArtistAccountPage() {
   };
 
   const StepIndicator = ({ number, title, active }: { number: number; title: string; active: boolean }) => (
-  <div
-    className={`flex flex-col items-center transition-all duration-300 ${
-      active ? 'text-purple-300 drop-shadow-[0_0_6px_#c084fc]' : 'text-gray-400'
-    }`}
-  >
     <div
-      className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-all duration-300 ${
-        active
-          ? 'bg-gradient-to-r from-purple-600 to-purple-400 text-white shadow-[0_0_12px_2px_#a855f7] '
-          : 'bg-gray-700/50 border border-gray-600'
+      className={`flex flex-col items-center transition-all duration-300 ${
+        active ? 'text-purple-300 drop-shadow-[0_0_6px_#c084fc]' : 'text-gray-400'
       }`}
     >
-      {active ? <FaCheck size={16} /> : number}
+      <div
+        className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-all duration-300 ${
+          active
+            ? 'bg-gradient-to-r from-purple-600 to-purple-400 text-white shadow-[0_0_12px_2px_#a855f7] '
+            : 'bg-gray-700/50 border border-gray-600'
+        }`}
+      >
+        {active ? <FaCheck size={16} /> : number}
+      </div>
+      <span className="text-sm font-medium font-special-regular">{title}</span>
     </div>
-    <span className="text-sm font-medium font-special-regular">{title}</span>
-  </div>
-);
+  );
 
   return (
     <AuroraBackground>
@@ -290,24 +339,21 @@ export default function CreateArtistAccountPage() {
           </div>
         </nav>
 
- 
-
         {/* Centered Form */}
         <div className="flex-1 flex h-full items-center justify-center p-4">
-          
-          
-          <div className="w-full  max-w-4xl bg-gray-800/30 backdrop-blur-2xl rounded-3xl 
+          <div className="w-full max-w-4xl bg-gray-800/30 backdrop-blur-2xl rounded-3xl 
                           border border-gray-600 border-t-white/20 border-l-white/20 p-6 md:p-8 shadow-2xl
                           relative before:absolute before:inset-0 before:bg-gradient-to-br before:from-gray-600/10 before:to-white/5 before:rounded-3xl before:-z-10">
             
             {/* Back Button */}
-                                  <button 
-                                    onClick={() => router.back()} 
-                                    className="flex items-center text-gray-300 hover:text-white mb-12 pt-1 ml-1 z-50 transition-colors"
-                                  >
-                                    <FaArrowLeft className="mr-2" />
-                                    Back to Dashboard
-                                  </button> 
+            <button 
+              onClick={() => router.back()} 
+              className="flex items-center text-gray-300 hover:text-white mb-12 pt-1 ml-1 z-50 transition-colors"
+            >
+              <FaArrowLeft className="mr-2" />
+              Back to Dashboard
+            </button> 
+            
             {/* Step Indicator - Top */}
             <div className="flex justify-between mb-8 px-4">
               <StepIndicator number={1} title="Basic Info" active={currentStep === 1} />
@@ -316,8 +362,6 @@ export default function CreateArtistAccountPage() {
               <div className="h-0.5 bg-gray-600 flex-1 mx-4 my-auto"></div>
               <StepIndicator number={3} title="Experience" active={currentStep === 3} />
             </div>
-
-            
 
             {/* Form Content */}
             <div className="space-y-6 max-h-[60vh] overflow-y-auto p-2">
@@ -499,7 +543,7 @@ export default function CreateArtistAccountPage() {
                           value={formData.contact.spotify}
                           onChange={handleContactChange}
                           className="w-full px-4 py-2.5 bg-gray-700/40 border border-gray-600/50 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent outline-none transition-all duration-200 text-sm text-white font-special-regular"
-                          placeholder="https://youtube.com/username"
+                          placeholder="https://open.spotify.com/artist/..."
                         />
                       </div>
                     </div>
@@ -514,20 +558,37 @@ export default function CreateArtistAccountPage() {
                     {/* Genres */}
                     <div>
                       <h3 className="text-xl font-semibold text-purple-300 mb-4 font-special">Musical Genres</h3>
-                      <div className="flex items-center gap-2 mb-3">
+                      <div className="flex items-center gap-2 mb-3 relative">
                         <input
                           type="text"
                           value={newGenre}
                           onChange={(e) => setNewGenre(e.target.value)}
+                          onFocus={() => setShowGenreSuggestions(true)}
+                          onBlur={() => setTimeout(() => setShowGenreSuggestions(false), 200)}
                           className="flex-1 px-4 py-2 bg-gray-700/40 border border-gray-600/50 rounded-lg text-sm text-white font-special-regular"
                           placeholder="Add a genre..."
                         />
                         <button
-                          onClick={addGenre}
+                          onClick={() => addGenre()}
                           className="p-2 bg-gradient-to-r from-purple-600 to-purple-400 text-white rounded-lg hover:from-purple-700 hover:to-purple-500 transition-colors"
                         >
                           <FaPlus size={14} />
                         </button>
+                        
+                        {/* Genre Suggestions */}
+                        {showGenreSuggestions && filteredGenres.length > 0 && (
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto">
+                            {filteredGenres.map((genre, index) => (
+                              <div
+                                key={index}
+                                className="px-4 py-2 hover:bg-gray-700 cursor-pointer text-sm text-white"
+                                onMouseDown={() => addGenre(genre)}
+                              >
+                                {genre}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {formData.genres.map((genre, index) => (
@@ -547,20 +608,37 @@ export default function CreateArtistAccountPage() {
                     {/* Instruments */}
                     <div>
                       <h3 className="text-xl font-semibold text-purple-300 mb-4 font-special">Instruments Played</h3>
-                      <div className="flex items-center gap-2 mb-3">
+                      <div className="flex items-center gap-2 mb-3 relative">
                         <input
                           type="text"
                           value={newInstrument}
                           onChange={(e) => setNewInstrument(e.target.value)}
+                          onFocus={() => setShowInstrumentSuggestions(true)}
+                          onBlur={() => setTimeout(() => setShowInstrumentSuggestions(false), 200)}
                           className="flex-1 px-4 py-2 bg-gray-700/40 border border-gray-600/50 rounded-lg text-sm text-white font-special-regular"
                           placeholder="Add an instrument..."
                         />
                         <button
-                          onClick={addInstrument}
+                          onClick={() => addInstrument()}
                           className="p-2 bg-gradient-to-r from-purple-600 to-purple-400 text-white rounded-lg hover:from-purple-700 hover:to-purple-500 transition-colors"
                         >
                           <FaPlus size={14} />
                         </button>
+                        
+                        {/* Instrument Suggestions */}
+                        {showInstrumentSuggestions && filteredInstruments.length > 0 && (
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto">
+                            {filteredInstruments.map((instrument, index) => (
+                              <div
+                                key={index}
+                                className="px-4 py-2 hover:bg-gray-700 cursor-pointer text-sm text-white"
+                                onMouseDown={() => addInstrument(instrument)}
+                              >
+                                {instrument}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {formData.instruments.map((instrument, index) => (
@@ -688,20 +766,37 @@ export default function CreateArtistAccountPage() {
                     {/* Languages */}
                     <div>
                       <h3 className="text-xl font-semibold text-purple-300 mb-4 font-special">Languages Spoken</h3>
-                      <div className="flex items-center gap-2 mb-3">
+                      <div className="flex items-center gap-2 mb-3 relative">
                         <input
                           type="text"
                           value={newLanguage}
                           onChange={(e) => setNewLanguage(e.target.value)}
+                          onFocus={() => setShowLanguageSuggestions(true)}
+                          onBlur={() => setTimeout(() => setShowLanguageSuggestions(false), 200)}
                           className="flex-1 px-4 py-2 bg-gray-700/40 border border-gray-600/50 rounded-lg text-sm text-white font-special-regular"
                           placeholder="Add a language..."
                         />
                         <button
-                          onClick={addLanguage}
+                          onClick={() => addLanguage()}
                           className="p-2 bg-gradient-to-r from-purple-600 to-purple-400 text-white rounded-lg hover:from-purple-700 hover:to-purple-500 transition-colors"
                         >
                           <FaPlus size={14} />
                         </button>
+                        
+                        {/* Language Suggestions */}
+                        {showLanguageSuggestions && filteredLanguages.length > 0 && (
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto">
+                            {filteredLanguages.map((language, index) => (
+                              <div
+                                key={index}
+                                className="px-4 py-2 hover:bg-gray-700 cursor-pointer text-sm text-white"
+                                onMouseDown={() => addLanguage(language)}
+                              >
+                                {language}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {formData.languages.map((language, index) => (

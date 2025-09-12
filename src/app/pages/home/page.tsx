@@ -60,7 +60,7 @@ export default function HomePage() {
       role: "Musician"
     },
     {
-      text: "As a studio owner, Audio Alchemic has brought me consistent bookings and serious artists. The management tools are fantastic.",
+      text: "As a studio owner, Audio Alchemic has brought me consistent bookings and serious artists. The management tools are fantastic.",
       author: "Sarah Johnson",
       role: "Studio Owner"
     },
@@ -373,7 +373,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className={`text-4xl font-bold mb-4 font-special `}>What Our Community Says</h2>
-            <p className={`text-gray-400 max-w-2xl mx-auto font-special-regular `}>Real experiences from artists and studios using Audio Alchemic</p>
+            <p className={`text-gray-400 max-w-2xl mx-auto font-special-regular `}>Real experiences from artists and studios using Audio Alchemic</p>
           </div>
           
           <div className="max-w-4xl mx-auto relative">
@@ -436,7 +436,7 @@ export default function HomePage() {
                   
                   <img src="/home/logo.png"  />
                 </div>
-                <span className={`text-2xl font-bold font-special `}>Audio Alchemic</span>
+                <span className={`text-2xl font-bold font-special `}>Audio Alchemic</span>
               </div>
               <p className={`text-gray-400 mb-6 font-special-regular `}>
                 Connecting artists with perfect recording spaces since 2025.
@@ -490,7 +490,7 @@ export default function HomePage() {
           
           <div className="pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center">
             <p className={`text-gray-500 mb-4 md:mb-0 font-special-regular `}>
-              &copy; 2025 Audio Alchemic. All rights reserved.
+              &copy; 2025 Audio Alchemic. All rights reserved.
             </p>
             <div className="flex items-center">
               <span className={`text-gray-500 mr-3 font-special `}>Language:</span>

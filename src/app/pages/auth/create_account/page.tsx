@@ -1,10 +1,10 @@
 'use client';
 
-import { AuroraBackground } from '@/app/components/aurora-background';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FaArrowRight, FaCheck, FaEnvelope, FaLock, FaUser, FaIdCard, FaMusic, FaBuilding } from 'react-icons/fa';
 import { createAccount, login } from '../service/api';
+import { AuroraBackground } from '@/app/components/aurora-background';
 
 export default function CreateAccountPage() {
   const [firstName, setFirstName] = useState('');
@@ -16,7 +16,14 @@ export default function CreateAccountPage() {
   const [currentStep, setCurrentStep] = useState(0); // 0 = form, 1 = email sent, 2 = account type selection
   const router = useRouter();  
 
-  const handleVerification = () => {
+
+  useEffect(() => {
+    if (localStorage.getItem("isVerified") === "true") {
+      setCurrentStep(2);
+    }
+  }, []);
+
+  const handleVerification = async () => {
     // Basic validation
     if (!firstName || !lastName || !email || !password || !confirmPassword) {
       alert('Please fill in all fields');
@@ -32,9 +39,7 @@ export default function CreateAccountPage() {
       alert('Password should be at least 6 characters long');
       return;
     }
-
     setIsLoading(true);
-    
     // Simulate email sending
     setTimeout(async () => {
       setIsLoading(false);
@@ -46,9 +51,30 @@ export default function CreateAccountPage() {
         localStorage.setItem("user_id", res.user_id);
         localStorage.setItem("role", res.role);
       }
-      setCurrentStep(2);
+      setCurrentStep(1);
       console.log('Verification email sent to:', email);
     }, 2000);
+
+    // === Send verification email ===
+    await fetch("/api/sendEmail", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        to: email,
+        subject: "Verify your email",
+        text: `Hello ${firstName}, please verify your email by clicking this link: https://your-app.com/verify?email=${email}`,
+        html: `
+          <h2>Hello ${firstName},</h2>
+          <p>Thanks for registering. Please verify your email by clicking the button below:</p>
+          <a href="http://localhost:3000/pages/auth/create_account/verify" 
+             style="display:inline-block;padding:10px 20px;background:#0070f3;color:#fff;text-decoration:none;border-radius:6px;">
+            Verify Email
+          </a>
+        `,
+      }),
+    });
+
+    console.log("Verification email sent to:", email);
   };
 
   const handleBackToLogin = () => {

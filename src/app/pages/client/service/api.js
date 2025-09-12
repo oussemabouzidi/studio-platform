@@ -1,8 +1,5 @@
-// require('dotenv').config();
-// Fix the API base URL - remove extra quotes and backticks
-// const api_base_url = `${process.env.API_BASE_URL}artist`;
-
-const api_base_url = `http://localhost:8800/api/artist`;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+const api_base_url = `${API_BASE_URL}/artist`;
 
 
 export async function getAllStudios() {

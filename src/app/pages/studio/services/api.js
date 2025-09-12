@@ -1,4 +1,5 @@
-const api_base_url = `http://localhost:8800/api/studio`;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+const api_base_url = `${API_BASE_URL}/studio`;
 
 
 export async function getBookings(id){
@@ -123,7 +124,8 @@ export async function getEarningData(id){
 
 
 export async function getProfile(id) {
-  const res = await fetch(`http://localhost:8800/api/artist/${id}/profile`);
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+  const res = await fetch(`${API_BASE_URL}/artist/${id}/profile`);
   if (!res.ok) {
     throw new Error("Failed to fetch profile");
   }

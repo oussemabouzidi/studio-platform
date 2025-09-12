@@ -11,6 +11,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const router = useRouter();
 
+
+
   const handleSignIn = async () => {
     const res = await login(email, password);
     console.log(res);
@@ -69,7 +71,9 @@ export default function LoginPage() {
           <div className="grid grid-cols-2 gap-3 mb-6">
             <button 
             className="flex items-center justify-center gap-2 w-full py-2.5 bg-transparent border border-white/20 text-white rounded-lg transition-all duration-300 hover:bg-white/10 hover:border-white/40 text-sm font-special-regular"
-            onClick={() => signIn("google")}>
+            onClick={async () => await signIn('google', { 
+              callbackUrl: `${window.location.origin}`
+            })}>
               <FaGoogle className="text-blue-300 text-lg" />
               <span>Google</span>
             </button>
