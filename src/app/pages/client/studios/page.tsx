@@ -4,13 +4,33 @@ import StudioCardGrid from '../../../components/StudioCardGrid';
 import PointsSection from '../../../components/PointsSection';
 import ArtistProfileDropdown from '../../../components/ArtistProfileDropdown ';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaMapMarkerAlt, FaStar, FaCalendarAlt, FaClock, FaMusic, FaFilter, FaTimes, FaChevronDown } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaStar, FaCalendarAlt, FaClock, FaMusic, FaFilter, FaTimes, FaChevronDown, FaCrown, FaRocket, FaFire, FaGem, FaAward, FaMedal, FaShieldAlt, FaStarHalfAlt } from 'react-icons/fa';
 import NotificationDropdown from '@/app/components/NotificationDropdown';
 import FavoritesLink from '@/app/components/FavoritesLink';
 import {getAllStudios, getBookingsByArtist, getMiniProfile} from '../service/api'
 import { Booking, Reviews, Studio } from '../types';
 import { useRouter } from "next/navigation";
 
+// Custom icon for analytics
+const FaChartBar = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M2 22h20V2H2v20zM4 4h16v16H4V4zm2 12h2V8H6v8zm4 0h2V6h-2v10zm4 0h2v-4h-2v4z"/>
+  </svg>
+);
+
+// Perk configuration based on level
+const STUDIO_PERKS = {
+  1: { name: "Basic", badge: null, description: "Listed in search, can receive bookings" },
+  2: { name: "Highlighted", badge: "Pro", color: "blue", icon: FaStarHalfAlt, description: "Highlighted profile with Pro badge" },
+  3: { name: "Ranking Boost", badge: "Boost", color: "green", icon: FaRocket, description: "Small ranking boost in search results" },
+  4: { name: "Featured", badge: "Featured", color: "purple", icon: FaFire, description: "Featured placement in local searches" },
+  5: { name: "Priority", badge: "Priority", color: "orange", icon: FaMedal, description: "Priority in category listings" },
+  6: { name: "Analytics", badge: "Analytics", color: "teal", icon: FaChartBar, description: "Premium analytics & insights" },
+  7: { name: "Headliner", badge: "Headliner", color: "red", icon: FaCrown, description: "Top search placement" },
+  8: { name: "Promo", badge: "Promo", color: "pink", icon: FaGem, description: "Exclusive promo campaigns" },
+  9: { name: "Legend", badge: "Legend", color: "yellow", icon: FaAward, description: "Lower commission (-1%)" },
+  10: { name: "Elite", badge: "Elite", color: "gradient", icon: FaShieldAlt, description: "Top banner placement, special media features" }
+};
 
 const StudiosPage = () => {
   const [studios, setStudios] = useState<Studio[]>([]);
@@ -77,12 +97,11 @@ const StudiosPage = () => {
     fetchBookings();
   }, []);
 
-
   // Fetching profile data
   useEffect(() => {
     async function fetchMiniProfile() {
       try {
-        const id = localStorage.getItem("user_id");
+        const id = 1;
         const data = await getMiniProfile(id);
         setArtistProfile(data);
         console.log("profile data is working");
@@ -93,48 +112,325 @@ const StudiosPage = () => {
     fetchMiniProfile();
   }, []);
 
-
   const router = useRouter();
 
-  const goToStudioBooking = (id: any) =>{
+  const goToStudioBooking = (id: any) => {
       router.push(`/pages/client/studios/studio-details/${id}`);
-  }
+  };
 
-  // Get recommended studios based on artist preferences
+  // Enhanced studio ranking with perk boosts
+  const getEnhancedRankingScore = (studio: Studio, searchTerm: string, filters: any) => {
+    let score = studio.rating * 20; // Base score from rating
+    
+    // Level-based boosts (tiered system)
+    if (studio.level >= 3) score += 15; // Small ranking boost
+    if (studio.level >= 7) score += 30; // Top search placement boost
+    if (studio.level >= 10) score += 50; // Maximum boost for elite studios
+    
+    // Search term relevance
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      if (studio.name.toLowerCase().includes(term)) score += 40;
+      if (studio.location.toLowerCase().includes(term)) score += 30;
+      if (studio.genres.some(g => g.toLowerCase().includes(term))) score += 25;
+      if (studio.equipment.some(e => e.toLowerCase().includes(term))) score += 20;
+    }
+    
+    // Filter matches
+    if (filters.location && studio.location.toLowerCase().includes(filters.location.toLowerCase())) {
+      score += 20;
+    }
+    if (filters.genre && studio.genres.some(g => g.toLowerCase().includes(filters.genre.toLowerCase()))) {
+      score += 15;
+    }
+    
+    return score;
+  };
+
+  // Sort studios with perk-based ranking
+  const getRankedStudios = (studiosList: Studio[], searchTerm: string, filters: any) => {
+    return [...studiosList].sort((a, b) => {
+      const scoreA = getEnhancedRankingScore(a, searchTerm, filters);
+      const scoreB = getEnhancedRankingScore(b, searchTerm, filters);
+      return scoreB - scoreA;
+    });
+  };
+
+  // Get featured studios (level 4+ for local searches)
+  const getFeaturedStudios = (studiosList: Studio[]) => {
+    return studiosList.filter(studio => studio.level >= 4);
+  };
+
+  // Get recommended studios based on artist preferences with perk consideration
   const getRecommendedStudios = () => {
-    return studios.filter(studio => {
-      // Match genres: at least one genre in common
+    const baseRecommended = studios.filter(studio => {
       const matchesGenres = studio.genres.some(genre => 
         artistProfile.preferences.genres.includes(genre)
       );
       
-      // More flexible location matching
       const artistLocation = artistProfile.preferences.location.toLowerCase();
       const studioLocation = studio.location.toLowerCase();
       const matchesLocation = studioLocation.includes(artistLocation) || 
                             artistLocation.includes(studioLocation.split(',')[0]) ||
                             (artistLocation.includes('new york') && studioLocation.includes('ny'));
       
-      // Match price: within the artist's price range
       const matchesPrice = studio.price >= artistProfile.preferences.priceRange[0] && 
                           studio.price <= artistProfile.preferences.priceRange[1];
       
-      // Match equipment: at least one equipment in common
       const matchesEquipment = studio.equipment.some(eq => 
         artistProfile.preferences.equipment.includes(eq)
       );
       
       return matchesGenres && matchesLocation && matchesPrice && matchesEquipment;
     });
+
+    return getRankedStudios(baseRecommended, searchTerm, filters);
   };
 
   const recommendedStudios = getRecommendedStudios();
+  const featuredStudios = getFeaturedStudios(studios);
 
-  // Filter studios based on search and filters
+  // Enhanced studio card component with perk badges
+  const StudioCardWithPerks = ({ studio }: { studio: Studio }) => {
+    const perk = STUDIO_PERKS[studio.level as keyof typeof STUDIO_PERKS] || STUDIO_PERKS[1];
+    const IconComponent = perk.icon;
+    
+    const getBadgeColor = () => {
+      switch (perk.color) {
+        case 'blue': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+        case 'green': return 'bg-green-500/20 text-green-400 border-green-500/30';
+        case 'purple': return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
+        case 'orange': return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
+        case 'teal': return 'bg-teal-500/20 text-teal-400 border-teal-500/30';
+        case 'red': return 'bg-red-500/20 text-red-400 border-red-500/30';
+        case 'pink': return 'bg-pink-500/20 text-pink-400 border-pink-500/30';
+        case 'yellow': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+        case 'gradient': return 'bg-gradient-to-r from-purple-500/30 to-pink-500/30 text-white border-purple-500/50';
+        default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+      }
+    };
+
+    const getBorderGlow = () => {
+  if (studio.level >= 10) {
+    return `
+      border-2 border-transparent
+      bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-blue-500/20 bg-clip-border
+      shadow-[0_0_30px_rgba(147,51,234,0.4),0_0_60px_rgba(236,72,153,0.2),inset_0_1px_0_rgba(255,255,255,0.1)]
+      hover:shadow-[0_0_40px_rgba(147,51,234,0.6),0_0_80px_rgba(236,72,153,0.3),inset_0_1px_0_rgba(255,255,255,0.2)]
+      relative overflow-hidden
+      before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-r before:from-purple-600/10 before:via-pink-600/10 before:to-blue-600/10 before:animate-pulse
+      after:absolute after:inset-0 after:-z-20 after:bg-gradient-conic after:from-purple-500/20 after:via-pink-500/20 after:to-blue-500/20 after:animate-spin after:duration-[8s]
+      transition-all duration-500 ease-out
+    `.replace(/\s+/g, ' ').trim();
+  }
+  
+  if (studio.level >= 7) {
+    return `
+      border-2 border-transparent
+      bg-gradient-to-r from-red-500/15 via-orange-500/15 to-yellow-500/15 bg-clip-border
+      shadow-[0_0_25px_rgba(239,68,68,0.3),0_0_50px_rgba(251,146,60,0.2),inset_0_1px_0_rgba(255,255,255,0.08)]
+      hover:shadow-[0_0_35px_rgba(239,68,68,0.5),0_0_70px_rgba(251,146,60,0.3),inset_0_1px_0_rgba(255,255,255,0.15)]
+      relative
+      before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-r before:from-red-600/8 before:via-orange-600/8 before:to-yellow-600/8 before:animate-pulse before:duration-[3s]
+      transition-all duration-400 ease-out
+    `.replace(/\s+/g, ' ').trim();
+  }
+  
+  if (studio.level >= 5) {
+    return `
+      border-2 border-transparent
+      bg-gradient-to-r from-orange-500/12 via-amber-500/12 to-yellow-500/12 bg-clip-border
+      shadow-[0_0_20px_rgba(251,146,60,0.25),0_0_40px_rgba(245,158,11,0.15),inset_0_1px_0_rgba(255,255,255,0.06)]
+      hover:shadow-[0_0_30px_rgba(251,146,60,0.4),0_0_60px_rgba(245,158,11,0.25),inset_0_1px_0_rgba(255,255,255,0.12)]
+      transition-all duration-300 ease-out
+    `.replace(/\s+/g, ' ').trim();
+  }
+  
+  if (studio.level >= 3) {
+    return `
+      border-2 border-transparent
+      bg-gradient-to-r from-green-500/10 via-emerald-500/10 to-teal-500/10 bg-clip-border
+      shadow-[0_0_15px_rgba(34,197,94,0.2),0_0_30px_rgba(16,185,129,0.1),inset_0_1px_0_rgba(255,255,255,0.05)]
+      hover:shadow-[0_0_25px_rgba(34,197,94,0.35),0_0_50px_rgba(16,185,129,0.2),inset_0_1px_0_rgba(255,255,255,0.1)]
+      transition-all duration-300 ease-out
+    `.replace(/\s+/g, ' ').trim();
+  }
+  
+  if (studio.level >= 2) {
+    return `
+      border-2 border-transparent
+      bg-gradient-to-r from-blue-500/8 via-indigo-500/8 to-purple-500/8 bg-clip-border
+      shadow-[0_0_12px_rgba(59,130,246,0.15),0_0_24px_rgba(99,102,241,0.08),inset_0_1px_0_rgba(255,255,255,0.04)]
+      hover:shadow-[0_0_20px_rgba(59,130,246,0.3),0_0_40px_rgba(99,102,241,0.15),inset_0_1px_0_rgba(255,255,255,0.08)]
+      transition-all duration-300 ease-out
+    `.replace(/\s+/g, ' ').trim();
+  }
+  
+  return `
+    border border-gray-700/40
+    shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.02)]
+    hover:border-gray-600/60
+    hover:shadow-[0_4px_16px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.04)]
+    transition-all duration-200 ease-out
+  `.replace(/\s+/g, ' ').trim();
+};
+
+const getBackgroundGlow = () => {
+  if (studio.level >= 10) {
+    return `
+      bg-gradient-to-br from-gray-900/70 via-purple-900/20 to-pink-900/20
+      backdrop-blur-xl
+      relative
+      before:absolute before:inset-0 before:-z-10 before:bg-gradient-radial before:from-purple-500/5 before:via-transparent before:to-pink-500/5
+      after:absolute after:inset-0 after:-z-20 after:bg-[radial-gradient(ellipse_at_center,_rgba(147,51,234,0.08)_0%,_transparent_50%)] after:animate-pulse after:duration-[4s]
+    `.replace(/\s+/g, ' ').trim();
+  }
+  
+  if (studio.level >= 7) {
+    return `
+      bg-gradient-to-br from-gray-900/65 via-red-900/15 to-orange-900/15
+      backdrop-blur-lg
+      relative
+      before:absolute before:inset-0 before:-z-10 before:bg-gradient-radial before:from-red-500/4 before:via-transparent before:to-orange-500/4
+      after:absolute after:inset-0 after:-z-20 after:bg-[radial-gradient(ellipse_at_center,_rgba(239,68,68,0.06)_0%,_transparent_60%)]
+    `.replace(/\s+/g, ' ').trim();
+  }
+  
+  if (studio.level >= 5) {
+    return `
+      bg-gradient-to-br from-gray-900/60 via-orange-900/12 to-yellow-900/12
+      backdrop-blur-lg
+      relative
+      before:absolute before:inset-0 before:-z-10 before:bg-gradient-radial before:from-orange-500/3 before:via-transparent before:to-yellow-500/3
+    `.replace(/\s+/g, ' ').trim();
+  }
+  
+  if (studio.level >= 3) {
+    return `
+      bg-gradient-to-br from-gray-900/58 via-green-900/10 to-teal-900/10
+      backdrop-blur-md
+      relative
+      before:absolute before:inset-0 before:-z-10 before:bg-gradient-radial before:from-green-500/2 before:via-transparent before:to-teal-500/2
+    `.replace(/\s+/g, ' ').trim();
+  }
+  
+  if (studio.level >= 2) {
+    return `
+      bg-gradient-to-br from-gray-900/55 via-blue-900/8 to-indigo-900/8
+      backdrop-blur-md
+      relative
+      before:absolute before:inset-0 before:-z-10 before:bg-gradient-radial before:from-blue-500/2 before:via-transparent before:to-indigo-500/2
+    `.replace(/\s+/g, ' ').trim();
+  }
+  
+  return `
+    bg-gradient-to-br from-gray-900/45 to-gray-800/30
+    backdrop-blur-sm
+  `.replace(/\s+/g, ' ').trim();
+};
+
+    return (
+      <div className={`relative rounded-2xl p-4 backdrop-blur transition-all duration-300 hover:scale-105 ${getBorderGlow()} ${getBackgroundGlow()}`}>
+        {/* Perk Badge */}
+        {perk.badge && (
+          <div className={`absolute -top-2 -right-2 z-10 flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold border ${getBadgeColor()}`}>
+            {IconComponent && <IconComponent className="h-3 w-3" />}
+            <span>{perk.badge}</span>
+          </div>
+        )}
+        
+        {/* Studio Content */}
+        <div className="flex items-center mb-3">
+          <img 
+            src={studio.avatar} 
+            alt={studio.name}
+            className={`w-12 h-12 rounded-full object-cover mr-3 ${
+              studio.level >= 2 ? 'border-2 border-opacity-50' : 'border'
+            } ${
+              studio.level >= 5 ? 'border-yellow-500' : studio.level >= 2 ? 'border-blue-500' : 'border-gray-600'
+            }`}
+          />
+          <div>
+            <h3 className="font-bold text-white text-sm">{studio.name}</h3>
+            <div className="flex items-center text-xs text-gray-400">
+              <FaMapMarkerAlt className="mr-1 text-purple-400" size={10} />
+              <span>{studio.location}</span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex flex-wrap gap-1 mb-3">
+          {studio.genres.slice(0, 2).map((genre, idx) => (
+            <span key={idx} className="bg-purple-900/30 text-purple-300 text-xs px-2 py-1 rounded-full">
+              {genre}
+            </span>
+          ))}
+          {studio.genres.length > 2 && (
+            <span className="bg-gray-800 text-gray-400 text-xs px-2 py-1 rounded-full">
+              +{studio.genres.length - 2}
+            </span>
+          )}
+        </div>
+        
+        <div className="flex justify-between items-center">
+          <div className="flex items-center">
+            <FaStar className="text-yellow-400 mr-1" size={12} />
+            <span className="text-sm">{studio.rating}</span>
+            <span className="text-gray-500 mx-1">•</span>
+            <span className="text-xs text-gray-400">Lvl {studio.level}</span>
+          </div>
+          <span className="text-sm font-bold text-purple-400">${studio.price}/hr</span>
+        </div>
+      </div>
+    );
+  };
+
+  // Enhanced StudioCardGrid with perks
+  const EnhancedStudioCardGrid = ({ studios: studiosToShow }: { studios: Studio[] }) => {
+    const rankedStudios = getRankedStudios(studiosToShow, searchTerm, filters);
+    
+    return (
+      <div className="space-y-6">
+        {/* Featured Studios Section (for level 4+) */}
+        {featuredStudios.length > 0 && searchTerm && (
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <FaFire className="text-orange-500 text-xl" />
+              <h3 className="text-lg font-bold text-white font-special">Featured Studios</h3>
+              <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded-full">
+                Local Favorites
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {featuredStudios.slice(0, 3).map(studio => (
+                <StudioCardWithPerks key={studio.id} studio={studio} />
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Main Studios Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {rankedStudios.map(studio => (
+            <motion.div
+              key={studio.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="relative"
+            >
+              <StudioCardWithPerks studio={studio} />
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // Filter studios based on search and filters - KEEPING ALL YOUR ORIGINAL FILTERS
   useEffect(() => {
     setLoading(true);
     
-    // Simulate API call delay
     const timer = setTimeout(() => {
       const filtered = studios.filter(studio => {
         // Search term filter
@@ -246,9 +542,8 @@ const StudiosPage = () => {
     setOpenFilterCategory(openFilterCategory === category ? null : category);
   };
 
-  // Enhanced Dashboard Section with studio details
+  // Enhanced Dashboard Section with studio details and perks
   const EnhancedDashboardSection = ({ bookings }: { bookings: Booking[] }) => {
-    // Get studio details for each booking
     const bookingsWithStudioDetails = useMemo(() => {
       return bookings.map(booking => {
         const studio = studios.find(s => s.id === booking.studio.id);
@@ -262,11 +557,12 @@ const StudiosPage = () => {
             genres: [],
             rating: 0,
             price: 0,
-            equipment: []
+            equipment: [],
+            level: 1
           }
         };
-      });
-    }, [bookings, studios]);
+      }, [bookings, studios]);
+    });
 
     return (
       <div className="space-y-6">
@@ -287,104 +583,113 @@ const StudiosPage = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {bookingsWithStudioDetails.map((booking) => (
-                <div key={booking.bookingId} className="bg-gray-900/50 backdrop-blur rounded-2xl p-6 border border-gray-700/50 transition-all hover:border-purple-500/50">
-                  <div className="flex flex-col md:flex-row gap-6">
-                    {/* Studio Image */}
-                    <div className="w-full md:w-48 h-48 flex-shrink-0">
-                      <img
-                        src={booking.studio.avatar}
-                        alt={booking.studio.name}
-                        className="w-full h-full object-cover rounded-xl"
-                      />
-                    </div>
-                    
-                    <div className="flex-1">
-                      {/* Studio Name and Rating */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                        <div>
-                          <h3 className="text-xl font-bold text-white font-special">{booking.studio.name}</h3>
-                          <div className="flex items-center text-gray-400 mt-2">
-                            <FaMapMarkerAlt className="mr-2 text-purple-400" />
-                            <span>{booking.studio.location}</span>
+              {bookingsWithStudioDetails.map((booking) => {
+                const perk = STUDIO_PERKS[booking.studio.level as keyof typeof STUDIO_PERKS] || STUDIO_PERKS[1];
+                const IconComponent = perk.icon;
+                
+                return (
+                  <div key={booking.bookingId} className="bg-gray-900/50 backdrop-blur rounded-2xl p-6 border border-gray-700/50 transition-all hover:border-purple-500/50">
+                    <div className="flex flex-col md:flex-row gap-6">
+                      <div className="w-full md:w-48 h-48 flex-shrink-0 relative">
+                        <img
+                          src={booking.studio.avatar}
+                          alt={booking.studio.name}
+                          className="w-full h-full object-cover rounded-xl"
+                        />
+                        {perk.badge && (
+                          <div className="absolute top-2 right-2 bg-black/70 backdrop-blur rounded-full px-2 py-1 text-xs font-bold text-white">
+                            {perk.badge}
                           </div>
-                        </div>
-                        <div className="flex-shrink-0">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                            booking.status === true ? 'bg-green-500/20 text-green-400' :
-                            booking.status === false ? 'bg-yellow-500/20 text-yellow-400' :
-                            'bg-red-500/20 text-red-400'
-                          }`}>
-                            {booking.status}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Studio Genres */}
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {booking.studio.genres.slice(0, 3).map((genre, index) => (
-                          <span key={index} className="bg-purple-900/30 text-purple-300 text-xs px-3 py-1.5 rounded-full">
-                            {genre}
-                          </span>
-                        ))}
-                        {booking.studio.genres.length > 3 && (
-                          <span className="bg-gray-800 text-gray-400 text-xs px-3 py-1.5 rounded-full">
-                            +{booking.studio.genres.length - 3} more
-                          </span>
                         )}
                       </div>
-
-                      {/* Booking Details */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm mb-4">
-                        <div>
-                          <p className="text-gray-500 flex items-center">
-                            <FaCalendarAlt className="mr-2" />
-                            Date
-                          </p>
-                          <p className="text-white">{new Date(booking.bookingDate).toLocaleDateString("en-CA")}</p>
+                      
+                      <div className="flex-1">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                          <div>
+                            <h3 className="text-xl font-bold text-white font-special">{booking.studio.name}</h3>
+                            <div className="flex items-center text-gray-400 mt-2">
+                              <FaMapMarkerAlt className="mr-2 text-purple-400" />
+                              <span>{booking.studio.location}</span>
+                              <span className="mx-2">•</span>
+                              <span className="text-sm text-gray-500">Level {booking.studio.level}</span>
+                            </div>
+                          </div>
+                          <div className="flex-shrink-0">
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                              booking.status === true ? 'bg-green-500/20 text-green-400' :
+                              booking.status === false ? 'bg-yellow-500/20 text-yellow-400' :
+                              'bg-red-500/20 text-red-400'
+                            }`}>
+                              {booking.status}
+                            </span>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-gray-500 flex items-center">
-                            <FaClock className="mr-2" />
-                            Time
-                          </p>
-                          <p className="text-white">{booking.bookingTime.toLocaleString()}</p>
-                        </div>
-                      </div>
 
-                      {/* Studio Equipment Preview */}
-                      <div className="mb-4">
-                        <p className="text-gray-500 text-sm mb-2">Featured Equipment:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {booking.studio.equipment.slice(0, 2).map((item, index) => (
-                            <span key={index} className="bg-blue-900/30 text-blue-300 text-xs px-2 py-1 rounded-full">
-                              {item}
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {booking.studio.genres.slice(0, 3).map((genre, index) => (
+                            <span key={index} className="bg-purple-900/30 text-purple-300 text-xs px-3 py-1.5 rounded-full">
+                              {genre}
                             </span>
                           ))}
-                          {booking.studio.equipment.length > 2 && (
-                            <span className="bg-gray-800 text-gray-400 text-xs px-2 py-1 rounded-full">
-                              +{booking.studio.equipment.length - 2} more
+                          {booking.studio.genres.length > 3 && (
+                            <span className="bg-gray-800 text-gray-400 text-xs px-3 py-1.5 rounded-full">
+                              +{booking.studio.genres.length - 3} more
                             </span>
                           )}
                         </div>
-                      </div>
 
-                      {/* Price and Rating */}
-                      <div className="flex justify-between items-center pt-4 border-t border-gray-700/50">
-                        <div className="flex items-center">
-                          <FaStar className="text-yellow-400 mr-1" />
-                          <span className="text-white">{booking.studio.rating}</span>
-                          <span className="text-gray-500 mx-2">•</span>
-                          <span className="text-purple-400 font-bold">${booking.studio.price}/hr</span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm mb-4">
+                          <div>
+                            <p className="text-gray-500 flex items-center">
+                              <FaCalendarAlt className="mr-2" />
+                              Date
+                            </p>
+                            <p className="text-white">{new Date(booking.bookingDate).toLocaleDateString("en-CA")}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500 flex items-center">
+                              <FaClock className="mr-2" />
+                              Time
+                            </p>
+                            <p className="text-white">{booking.bookingTime.toLocaleString()}</p>
+                          </div>
                         </div>
-                        <button onClick={goToStudioBooking(booking.studio.id)} className="text-sm bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-xl transition-all">
-                          View Studio Details
-                        </button>
+
+                        <div className="mb-4">
+                          <p className="text-gray-500 text-sm mb-2">Featured Equipment:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {booking.studio.equipment.slice(0, 2).map((item, index) => (
+                              <span key={index} className="bg-blue-900/30 text-blue-300 text-xs px-2 py-1 rounded-full">
+                                {item}
+                              </span>
+                            ))}
+                            {booking.studio.equipment.length > 2 && (
+                              <span className="bg-gray-800 text-gray-400 text-xs px-2 py-1 rounded-full">
+                                +{booking.studio.equipment.length - 2} more
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex justify-between items-center pt-4 border-t border-gray-700/50">
+                          <div className="flex items-center">
+                            <FaStar className="text-yellow-400 mr-1" />
+                            <span className="text-white">{booking.studio.rating}</span>
+                            <span className="text-gray-500 mx-2">•</span>
+                            <span className="text-purple-400 font-bold">${booking.studio.price}/hr</span>
+                          </div>
+                          <button 
+                            onClick={() => goToStudioBooking(booking.studio.id)} 
+                            className="text-sm bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-xl transition-all"
+                          >
+                            View Studio Details
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -399,7 +704,7 @@ const StudiosPage = () => {
     { id: 'points', label: 'My Points', color: 'yellow' },
   ];
 
-  // Sample data for filter options
+  // Sample data for filter options - KEEPING ALL YOUR ORIGINAL OPTIONS
   const availabilityOptions = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   const serviceOptions = ['Recording', 'Mixing', 'Mastering', 'Rehearsal', 'Live Sound'];
   const amenityOptions = ['WiFi', 'Parking', 'Kitchen', 'Lounge', 'Shower'];
@@ -418,252 +723,202 @@ const StudiosPage = () => {
         
         {/* Top Navigation Bar */}
         <div className="relative z-20 w-full">
-  <div className="max-w-7xl mx-auto px-2 sm:px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="max-w-7xl mx-auto px-2 sm:px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="w-full md:w-[15%] flex justify-start">
+              <img 
+                src="/home/logo.png" 
+                className="h-12 w-16 md:h-15 md:w-20 hover:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] rounded-sm" 
+                alt="Logo"  
+              />
+            </div>
 
-    {/* Logo - Left */}
-    <div className="w-full md:w-[15%] flex justify-start">
-      <img 
-        src="/home/logo.png" 
-        className="h-12 w-16 md:h-15 md:w-20 hover:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] rounded-sm" 
-        alt="Logo"  
-      />
-    </div>
+            <div className="w-full md:w-[70%] flex justify-center">
+              <div className="relative bg-gray-800/50 backdrop-blur-2xl rounded-full p-1 border border-gray-500 border-t-white/30 border-l-white/30 shadow-2xl w-full md:w-auto">
+                <div className="flex flex-wrap md:flex-nowrap justify-center md:space-x-1 gap-1">
+                  {tabs.map((tab) => (
+                    <button
+                      key={tab.id}
+                      className={`relative px-4 md:px-5 py-2.5 rounded-full text-sm font-special transition-colors duration-300 ${
+                        activeTab === tab.id
+                          ? "text-white opacity-100 drop-shadow-[0_0_8px_rgba(147,51,234,0.8)]"
+                          : "text-white opacity-50 hover:text-gray-400"
+                      }`}
+                      onClick={() => setActiveTab(tab.id)}
+                    >
+                      {activeTab === tab.id && (
+                        <motion.div
+                          className="absolute inset-0 rounded-full bg-purple-600/30 backdrop-blur-3xl z-0"
+                          layoutId="activeTab"
+                          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                        />
+                      )}
+                      <span className="relative z-10">{tab.label}</span>
+                    </button>
+                  ))} 
+                </div>
+              </div>
+            </div>
 
-    {/* Modern Tab Navigation - Center */}
-    <div className="w-full md:w-[70%] flex justify-center">
-      <div className="relative bg-gray-800/50 backdrop-blur-2xl rounded-full p-1 border border-gray-500 border-t-white/30 border-l-white/30 shadow-2xl w-full md:w-auto">
-        <div className="flex flex-wrap md:flex-nowrap justify-center md:space-x-1 gap-1">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              className={`relative px-4 md:px-5 py-2.5 rounded-full text-sm font-special transition-colors duration-300 ${
-                activeTab === tab.id
-                  ? "text-white opacity-100 drop-shadow-[0_0_8px_rgba(147,51,234,0.8)]"
-                  : "text-white opacity-50 hover:text-gray-400"
-              }`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {/* Background highlight */}
-              {activeTab === tab.id && (
-                <motion.div
-                  className="absolute inset-0 rounded-full bg-purple-600/30 backdrop-blur-3xl z-0"
-                  layoutId="activeTab"
-                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                />
-              )}
-
-              {/* Foreground text */}
-              <span className="relative z-10">{tab.label}</span>
-            </button>
-          ))} 
+            <div className="w-full md:w-[35%] flex justify-end items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <NotificationDropdown />
+                <FavoritesLink />
+              </div>
+              
+              <ArtistProfileDropdown
+                artistProfile={{
+                  name: artistProfile.name,
+                  prenom: artistProfile.artistName,
+                  avatar: artistProfile.avatar
+                }}
+              />
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-
-    {/* Right Section */}
-    <div className="w-full md:w-[35%] flex justify-end items-center space-x-3">
-      <div className="flex items-center space-x-2">
-        <NotificationDropdown />
-        <FavoritesLink />
-      </div>
       
-      <ArtistProfileDropdown
-        artistProfile={{
-          name: artistProfile.name,
-          prenom: artistProfile.artistName,
-          avatar: artistProfile.avatar
-        }}
-      />
-    </div>
-  </div>
-</div>
-
-
-      
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        {/* Enhanced Header with Floating Effect */}
-        <motion.div 
-          className="text-center mb-12"
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <motion.h1 
-            className="text-4xl md:text-5xl drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] transition-all duration-300 font-special bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-blue-400 to-purple-400 mb-4"
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.1, duration: 0.5 }}
-          >
-            Discover Your Creative Space
-          </motion.h1>
-          <motion.p 
-            className="text-gray-400 max-w-2xl mx-auto text-lg font-special-regular"
-            initial={{ y: 10, opacity: 0 }}
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-8">
+          <motion.div 
+            className="text-center mb-12"
+            initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
+            transition={{ duration: 0.5 }}
           >
-            Find the perfect studio for your next masterpiece. Book, create, and grow.
-          </motion.p>
-        </motion.div>
-        
-        <AnimatePresence mode="wait">
-          {/* Search Tab */}
-          {activeTab === 'search' && (
-            <motion.div
-              key="search"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
+            <motion.h1 
+              className="text-4xl md:text-5xl drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] transition-all duration-300 font-special bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-blue-400 to-purple-400 mb-4"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.1, duration: 0.5 }}
             >
-              {/* Recommended Studios Section - Compact Version */}
-              {recommendedStudios.length > 0 && (
-                <motion.div 
-                  className="mb-8 relative group"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1, duration: 0.5 }}
-                  onHoverStart={() => setExpanded(true)}
-                  onHoverEnd={() => setExpanded(false)}
-                >
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-bold text-white flex items-center font-special">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-400 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                      Recommendations For You
-                    </h2>
-                    <p className="text-gray-500 text-xs hidden md:block">Based on your preferences</p>
-                  </div>
-                  
-                  {/* Compact View (Always Visible) */}
-                  <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 backdrop-blur-sm rounded-xl border border-gray-500 border-t-white/30 border-l-white/30 md:p-8 shadow-2xl p-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {recommendedStudios.slice(0, 3).map(studio => (
-                        <div 
-                          key={studio.id} 
-                          className="bg-gray-900/50 backdrop-blur rounded-xl p-4 border border-gray-700/50 transition-all group-hover:opacity-0"
-                        >
-                          <div className="flex items-center mb-3">
-                            <img 
-                              src={studio.avatar} 
-                              alt={studio.name}
-                              className="w-12 h-12 rounded-full object-cover mr-3 border border-purple-500/50"
-                            />
-                            <div>
-                              <h3 className="font-bold text-white text-sm">{studio.name}</h3>
-                              <div className="flex items-center text-xs text-gray-400">
-                                <FaMapMarkerAlt className="mr-1 text-purple-400" size={10} />
-                                <span>{studio.location}</span>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="flex flex-wrap gap-1 mb-3">
-                            {studio.genres.slice(0, 2).map((genre, idx) => (
-                              <span 
-                                key={idx} 
-                                className="bg-purple-900/30 text-purple-300 text-xs px-2 py-1 rounded-full"
-                              >
-                                {genre}
-                              </span>
-                            ))}
-                            {studio.genres.length > 2 && (
-                              <span className="bg-gray-800 text-gray-400 text-xs px-2 py-1 rounded-full">
-                                +{studio.genres.length - 2}
-                              </span>
-                            )}
-                          </div>
-                          
-                          <div className="flex justify-between items-center">
-                            <div className="flex items-center">
-                              <FaStar className="text-yellow-400 mr-1" size={12} />
-                              <span className="text-sm">{studio.rating}</span>
-                            </div>
-                            <span className="text-sm font-bold text-purple-400">${studio.price}/hr</span>
-                          </div>
-                        </div>
-                      ))}
+              Discover Your Creative Space
+            </motion.h1>
+            <motion.p 
+              className="text-gray-400 max-w-2xl mx-auto text-lg font-special-regular"
+              initial={{ y: 10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+            >
+              Find the perfect studio for your next masterpiece. Book, create, and grow.
+            </motion.p>
+          </motion.div>
+          
+          <AnimatePresence mode="wait">
+            {/* Search Tab */}
+            {activeTab === 'search' && (
+              <motion.div
+                key="search"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                {/* Recommended Studios Section */}
+                {recommendedStudios.length > 0 && (
+                  <motion.div 
+                    className="mb-8 relative group"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1, duration: 0.5 }}
+                    onHoverStart={() => setExpanded(true)}
+                    onHoverEnd={() => setExpanded(false)}
+                  >
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-xl font-bold text-white flex items-center font-special">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-400 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                        Recommendations For You
+                      </h2>
+                      <p className="text-gray-500 text-xs hidden md:block">Based on your preferences</p>
                     </div>
-                  </div>
-                  
-                  {/* Expandable Full View (Visible on Hover) */}
-                  <AnimatePresence>
-                    {expanded && (
-                      <motion.div
-                        className="absolute top-0 left-0 w-full z-10"
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.3, ease: "easeInOut" }}
-                      >
-                        <div className="bg-gradient-to-r from-purple-900/80 to-blue-900/80 backdrop-blur-lg rounded-xl border border-purple-500/50 p-6 shadow-2xl">
-                          <h2 className="text-xl font-bold text-white flex items-center font-special-regular">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-400 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    
+                    <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 backdrop-blur-sm rounded-xl border border-gray-500 border-t-white/30 border-l-white/30 md:p-8 shadow-2xl p-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {recommendedStudios.slice(0, 3).map(studio => (
+                          <StudioCardWithPerks key={studio.id} studio={studio} />
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <AnimatePresence>
+                      {expanded && (
+                        <motion.div
+                          className="absolute top-0 left-0 w-full z-10"
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.3, ease: "easeInOut" }}
+                        >
+                          <div className="bg-gradient-to-r from-purple-900/80 to-blue-900/80 backdrop-blur-lg rounded-xl border border-purple-500/50 p-6 shadow-2xl">
+                            <h2 className="text-xl font-bold text-white flex items-center font-special-regular">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-400 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                              Recommended For You Based On Your Profile
+                            </h2><br />
+                            <EnhancedStudioCardGrid studios={recommendedStudios} />
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                )}
+                
+                <div className="bg-gray-800/30 backdrop-blur-lg rounded-2xl border border-gray-500 border-t-white/30 border-l-white/30 p-6 md:p-8 shadow-2xl">
+                  <div className="flex flex-col lg:flex-row gap-6">
+                    
+                    
+                    {/* Main Content */}
+                    <div className="flex-1">
+                      {/* Enhanced Search Bar */}
+                      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                        <div className="relative flex-1">
+                          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
-                            Recommended For You Based On Your Profile
-                          </h2><br />
-                          <StudioCardGrid studios={recommendedStudios} />
+                          </div>
+                          <input
+                            type="text"
+                            placeholder="Search studios by name, location, or genre..."
+                            className="w-full bg-gray-900/70 backdrop-blur border border-gray-700 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent transition-all"
+                            value={searchTerm}
+                            onChange={handleSearch}
+                          />
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-              )}
-              <div className="bg-gray-800/30 backdrop-blur-lg rounded-2xl border border-gray-500 border-t-white/30 border-l-white/30 p-6 md:p-8 shadow-2xl">
-                <div className="flex flex-col lg:flex-row gap-6">
-                  {/* Modern Filters Panel - Hidden on desktop, shown via hamburger on mobile */}
-                  <div className={`w-full lg:w-80 flex-shrink-0 ${showFilters ? 'block' : 'hidden'}`}>
-                    <div className="bg-gray-900/70 backdrop-blur-xl rounded-2xl border border-gray-700/50 p-6 shadow-lg">
-                      <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-xl font-bold text-white font-special">Filters</h3>
-                        <div className="flex gap-2">
-                          <button 
-                            onClick={resetFilters}
-                            className="text-sm text-purple-400 hover:text-purple-300 transition-colors"
-                          >
-                            Reset All
-                          </button>
-                          <button 
-                            className="lg:hidden text-gray-400 hover:text-white"
-                            onClick={() => setShowFilters(false)}
-                          >
-                            <FaTimes />
-                          </button>
-                        </div>
+                        <button 
+                          className="lg:hidden bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-xl flex items-center justify-center transition-all font-special-regular"
+                          onClick={() => setShowFilters(!showFilters)}
+                        >
+                          {showFilters ? (
+                            <>
+                              <FaTimes className="h-5 w-5 mr-2" />
+                              Hide Filters
+                            </>
+                          ) : (
+                            <>
+                              <FaFilter className="h-5 w-5 mr-2" />
+                              Show Filters
+                            </>
+                          )}
+                        </button>
                       </div>
                       
-                      <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-                        {/* Search Filter */}
-                        <div>
-                          <div className="relative">
-                            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                              </svg>
-                            </div>
-                            <input
-                              type="text"
-                              placeholder="Search studios..."
-                              className="w-full bg-gray-800/50 border border-gray-700 rounded-xl py-2.5 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent transition-all"
-                              value={searchTerm}
-                              onChange={handleSearch}
-                            />
-                          </div>
-                        </div>
-                        
+                      {/* Horizontal Filter Bar for Desktop - KEEPING ALL YOUR ORIGINAL FILTERS */}
+                      <div className="hidden lg:flex flex-wrap gap-3 mb-6 bg-gray-900/70 backdrop-blur rounded-xl p-4 border border-gray-700/50 relative z-30">
                         {/* Location Filter */}
-                        <div className="bg-gray-800/40 rounded-xl p-3">
+                        <div className="relative group">
+
+                          
                           <button 
-                            className="flex justify-between items-center w-full text-left"
+                            className="flex items-center gap-2 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 py-2 px-4 rounded-xl transition-all text-sm"
                             onClick={() => toggleFilterCategory('location')}
                           >
-                            <span className="text-sm font-medium text-white">Location</span>
-                            <FaChevronDown className={`transition-transform ${openFilterCategory === 'location' ? 'rotate-180' : ''}`} />
+                            <FaMapMarkerAlt className="text-purple-400" />
+                            Location
+                            <FaChevronDown className={`text-xs transition-transform ${openFilterCategory === 'location' ? 'rotate-180' : ''}`} />
                           </button>
                           {openFilterCategory === 'location' && (
-                            <div className="mt-3">
+                            <div className="absolute top-full left-0 mt-2 z-50 bg-gray-800/90 backdrop-blur-lg rounded-xl p-4 min-w-[250px] shadow-2xl border border-gray-700">
                               <div className="relative">
                                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
                                   <FaMapMarkerAlt className="h-4 w-4" />
@@ -671,7 +926,7 @@ const StudiosPage = () => {
                                 <input
                                   type="text"
                                   placeholder="Enter location"
-                                  className="w-full bg-gray-700/50 border border-gray-600 rounded-lg py-2 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent text-sm"
+                                  className="w-full bg-gray-700/70 border border-gray-600 rounded-lg py-2 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent text-sm"
                                   value={filters.location}
                                   onChange={(e) => handleFilterChange('location', e.target.value)}
                                 />
@@ -681,16 +936,17 @@ const StudiosPage = () => {
                         </div>
                         
                         {/* Genre Filter */}
-                        <div className="bg-gray-800/40 rounded-xl p-3">
+                        <div className="relative group">
                           <button 
-                            className="flex justify-between items-center w-full text-left"
+                            className="flex items-center gap-2 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 py-2 px-4 rounded-xl transition-all text-sm"
                             onClick={() => toggleFilterCategory('genre')}
                           >
-                            <span className="text-sm font-medium text-white">Genre</span>
-                            <FaChevronDown className={`transition-transform ${openFilterCategory === 'genre' ? 'rotate-180' : ''}`} />
+                            <FaMusic className="text-purple-400" />
+                            Genre
+                            <FaChevronDown className={`text-xs transition-transform ${openFilterCategory === 'genre' ? 'rotate-180' : ''}`} />
                           </button>
                           {openFilterCategory === 'genre' && (
-                            <div className="mt-3">
+                            <div className="absolute top-full left-0 mt-2 z-50 bg-gray-800/90 backdrop-blur-lg rounded-xl p-4 min-w-[250px] shadow-2xl border border-gray-700">
                               <div className="relative">
                                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
                                   <FaMusic className="h-4 w-4" />
@@ -698,7 +954,7 @@ const StudiosPage = () => {
                                 <input
                                   type="text"
                                   placeholder="Search genre"
-                                  className="w-full bg-gray-700/50 border border-gray-600 rounded-lg py-2 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent text-sm"
+                                  className="w-full bg-gray-700/70 border border-gray-600 rounded-lg py-2 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent text-sm"
                                   value={filters.genre}
                                   onChange={(e) => handleFilterChange('genre', e.target.value)}
                                 />
@@ -708,671 +964,349 @@ const StudiosPage = () => {
                         </div>
                         
                         {/* Price Range Filter */}
-                        <div className="bg-gray-800/40 rounded-xl p-3">
+                        <div className="relative group">
                           <button 
-                            className="flex justify-between items-center w-full text-left"
+                            className="flex items-center gap-2 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 py-2 px-4 rounded-xl transition-all text-sm"
                             onClick={() => toggleFilterCategory('price')}
                           >
-                            <span className="text-sm font-medium text-white">Price Range</span>
-                            <FaChevronDown className={`transition-transform ${openFilterCategory === 'price' ? 'rotate-180' : ''}`} />
+                            <span className="text-purple-400">$</span>
+                            Price
+                            <FaChevronDown className={`text-xs transition-transform ${openFilterCategory === 'price' ? 'rotate-180' : ''}`} />
                           </button>
                           {openFilterCategory === 'price' && (
-                            <div className="mt-3 space-y-4">
-                              <div>
-                                <label className="block text-xs text-gray-400 mb-2">
-                                  ${filters.priceRange[0]} - ${filters.priceRange[1]}
-                                </label>
-                                <div className="space-y-2">
-                                  <input
-                                    type="range"
-                                    min="0"
-                                    max="200"
-                                    step="10"
-                                    value={filters.priceRange[0]}
-                                    onChange={(e) => handleFilterChange('priceRange', [parseInt(e.target.value), filters.priceRange[1]])}
-                                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-500"
-                                  />
-                                  <input
-                                    type="range"
-                                    min="0"
-                                    max="200"
-                                    step="10"
-                                    value={filters.priceRange[1]}
-                                    onChange={(e) => handleFilterChange('priceRange', [filters.priceRange[0], parseInt(e.target.value)])}
-                                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-500"
-                                  />
+                            <div className="absolute top-full left-0 mt-2 z-50 bg-gray-800/90 backdrop-blur-lg rounded-xl p-4 min-w-[300px] shadow-2xl border border-gray-700">
+                              <div className="space-y-4">
+                                <div>
+                                  <label className="block text-xs text-gray-400 mb-2">
+                                    ${filters.priceRange[0]} - ${filters.priceRange[1]}
+                                  </label>
+                                  <div className="space-y-2">
+                                    <input
+                                      type="range"
+                                      min="0"
+                                      max="200"
+                                      step="10"
+                                      value={filters.priceRange[0]}
+                                      onChange={(e) => handleFilterChange('priceRange', [parseInt(e.target.value), filters.priceRange[1]])}
+                                      className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-500"
+                                    />
+                                    <input
+                                      type="range"
+                                      min="0"
+                                      max="200"
+                                      step="10"
+                                      value={filters.priceRange[1]}
+                                      onChange={(e) => handleFilterChange('priceRange', [filters.priceRange[0], parseInt(e.target.value)])}
+                                      className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-500"
+                                    />
+                                  </div>
+                                  <div className="flex justify-between text-xs text-gray-400 mt-1">
+                                    <span>$0</span>
+                                    <span>$200</span>
+                                  </div>
                                 </div>
-                                <div className="flex justify-between text-xs text-gray-400 mt-1">
-                                  <span>$0</span>
-                                  <span>$200</span>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <button 
+                                    className={`px-3 py-1.5 text-xs rounded-lg transition-all ${
+                                      filters.priceRange[0] === 0 && filters.priceRange[1] === 100
+                                        ? 'bg-purple-600 text-white'
+                                        : 'bg-gray-700/50 text-gray-300 hover:bg-gray-600/50'
+                                    }`}
+                                    onClick={() => handleFilterChange('priceRange', [0, 100])}
+                                  >
+                                    Under $100
+                                  </button>
+                                  <button 
+                                    className={`px-3 py-1.5 text-xs rounded-lg transition-all ${
+                                      filters.priceRange[0] === 100 && filters.priceRange[1] === 200
+                                        ? 'bg-purple-600 text-white'
+                                        : 'bg-gray-700/50 text-gray-300 hover:bg-gray-600/50'
+                                    }`}
+                                    onClick={() => handleFilterChange('priceRange', [100, 200])}
+                                  >
+                                    Premium
+                                  </button>
                                 </div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2">
-                                <button 
-                                  className={`px-3 py-1.5 text-xs rounded-lg transition-all ${
-                                    filters.priceRange[0] === 0 && filters.priceRange[1] === 100
-                                      ? 'bg-purple-600 text-white'
-                                      : 'bg-gray-700/50 text-gray-300 hover:bg-gray-600/50'
-                                  }`}
-                                  onClick={() => handleFilterChange('priceRange', [0, 100])}
-                                >
-                                  Under $100
-                                </button>
-                                <button 
-                                  className={`px-3 py-1.5 text-xs rounded-lg transition-all ${
-                                    filters.priceRange[0] === 100 && filters.priceRange[1] === 200
-                                      ? 'bg-purple-600 text-white'
-                                      : 'bg-gray-700/50 text-gray-300 hover:bg-gray-600/50'
-                                  }`}
-                                  onClick={() => handleFilterChange('priceRange', [100, 200])}
-                                >
-                                  Premium
-                                </button>
                               </div>
                             </div>
                           )}
                         </div>
                         
                         {/* Availability Filter */}
-                        <div className="bg-gray-800/40 rounded-xl p-3">
+                        <div className="relative group">
                           <button 
-                            className="flex justify-between items-center w-full text-left"
+                            className="flex items-center gap-2 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 py-2 px-4 rounded-xl transition-all text-sm"
                             onClick={() => toggleFilterCategory('availability')}
                           >
-                            <span className="text-sm font-medium text-white">Availability</span>
-                            <FaChevronDown className={`transition-transform ${openFilterCategory === 'availability' ? 'rotate-180' : ''}`} />
+                            <FaCalendarAlt className="text-purple-400" />
+                            Availability
+                            <FaChevronDown className={`text-xs transition-transform ${openFilterCategory === 'availability' ? 'rotate-180' : ''}`} />
                           </button>
                           {openFilterCategory === 'availability' && (
-                            <div className="mt-3 space-y-2">
-                              {availabilityOptions.map(day => (
-                                <label key={day} className="flex items-center text-sm text-gray-300">
-                                  <input
-                                    type="checkbox"
-                                    checked={filters.availability.includes(day)}
-                                    onChange={() => handleMultiSelectFilter('availability', day)}
-                                    className="rounded border-gray-600 text-purple-500 focus:ring-purple-500 bg-gray-700/50"
-                                  />
-                                  <span className="ml-2">{day}</span>
-                                </label>
-                              ))}
+                            <div className="absolute top-full left-0 mt-2 z-50 bg-gray-800/90 backdrop-blur-lg rounded-xl p-4 min-w-[200px] shadow-2xl border border-gray-700">
+                              <div className="space-y-2">
+                                {availabilityOptions.map(day => (
+                                  <label key={day} className="flex items-center text-sm text-gray-300">
+                                    <input
+                                      type="checkbox"
+                                      checked={filters.availability.includes(day)}
+                                      onChange={() => handleMultiSelectFilter('availability', day)}
+                                      className="rounded border-gray-600 text-purple-500 focus:ring-purple-500 bg-gray-700/50"
+                                    />
+                                    <span className="ml-2">{day}</span>
+                                  </label>
+                                ))}
+                              </div>
                             </div>
                           )}
                         </div>
                         
                         {/* Services Filter */}
-                        <div className="bg-gray-800/40 rounded-xl p-3">
+                        <div className="relative group">
                           <button 
-                            className="flex justify-between items-center w-full text-left"
+                            className="flex items-center gap-2 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 py-2 px-4 rounded-xl transition-all text-sm"
                             onClick={() => toggleFilterCategory('services')}
                           >
-                            <span className="text-sm font-medium text-white">Services</span>
-                            <FaChevronDown className={`transition-transform ${openFilterCategory === 'services' ? 'rotate-180' : ''}`} />
+                            <FaMusic className="text-purple-400" />
+                            Services
+                            <FaChevronDown className={`text-xs transition-transform ${openFilterCategory === 'services' ? 'rotate-180' : ''}`} />
                           </button>
                           {openFilterCategory === 'services' && (
-                            <div className="mt-3 space-y-2">
-                              {serviceOptions.map(service => (
-                                <label key={service} className="flex items-center text-sm text-gray-300">
-                                  <input
-                                    type="checkbox"
-                                    checked={filters.services.includes(service)}
-                                    onChange={() => handleMultiSelectFilter('services', service)}
-                                    className="rounded border-gray-600 text-purple-500 focus:ring-purple-500 bg-gray-700/50"
-                                  />
-                                  <span className="ml-2">{service}</span>
-                                </label>
-                              ))}
+                            <div className="absolute top-full left-0 mt-2 z-50 bg-gray-800/90 backdrop-blur-lg rounded-xl p-4 min-w-[200px] shadow-2xl border border-gray-700">
+                              <div className="space-y-2">
+                                {serviceOptions.map(service => (
+                                  <label key={service} className="flex items-center text-sm text-gray-300">
+                                    <input
+                                      type="checkbox"
+                                      checked={filters.services.includes(service)}
+                                      onChange={() => handleMultiSelectFilter('services', service)}
+                                      className="rounded border-gray-600 text-purple-500 focus:ring-purple-500 bg-gray-700/50"
+                                    />
+                                    <span className="ml-2">{service}</span>
+                                  </label>
+                                ))}
+                              </div>
                             </div>
                           )}
                         </div>
                         
-                        {/* Amenities Filter */}
-                        <div className="bg-gray-800/40 rounded-xl p-3">
+                        {/* More Filters Button */}
+                        <div className="relative group">
                           <button 
-                            className="flex justify-between items-center w-full text-left"
-                            onClick={() => toggleFilterCategory('amenities')}
+                            className="flex items-center gap-2 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 py-2 px-4 rounded-xl transition-all text-sm"
+                            onClick={() => toggleFilterCategory('more')}
                           >
-                            <span className="text-sm font-medium text-white">Amenities</span>
-                            <FaChevronDown className={`transition-transform ${openFilterCategory === 'amenities' ? 'rotate-180' : ''}`} />
+                            <FaFilter className="text-purple-400" />
+                            More Filters
+                            <FaChevronDown className={`text-xs transition-transform ${openFilterCategory === 'more' ? 'rotate-180' : ''}`} />
                           </button>
-                          {openFilterCategory === 'amenities' && (
-                            <div className="mt-3 space-y-2">
-                              {amenityOptions.map(amenity => (
-                                <label key={amenity} className="flex items-center text-sm text-gray-300">
-                                  <input
-                                    type="checkbox"
-                                    checked={filters.amenities.includes(amenity)}
-                                    onChange={() => handleMultiSelectFilter('amenities', amenity)}
-                                    className="rounded border-gray-600 text-purple-500 focus:ring-purple-500 bg-gray-700/50"
-                                  />
-                                  <span className="ml-2">{amenity}</span>
-                                </label>
-                              ))}
+                          {openFilterCategory === 'more' && (
+                            <div className="absolute top-full right-0 mt-2 z-50 bg-gray-800/90 backdrop-blur-lg rounded-xl p-4 w-[300px] shadow-2xl border border-gray-700">
+                              <div className="grid grid-cols-2 gap-4">
+                                {/* Amenities Filter */}
+                                <div>
+                                  <h4 className="text-sm font-medium text-white mb-2">Amenities</h4>
+                                  <div className="space-y-2">
+                                    {amenityOptions.map(amenity => (
+                                      <label key={amenity} className="flex items-center text-xs text-gray-300">
+                                        <input
+                                          type="checkbox"
+                                          checked={filters.amenities.includes(amenity)}
+                                          onChange={() => handleMultiSelectFilter('amenities', amenity)}
+                                          className="rounded border-gray-600 text-purple-500 focus:ring-purple-500 bg-gray-700/50"
+                                        />
+                                        <span className="ml-2">{amenity}</span>
+                                      </label>
+                                    ))}
+                                  </div>
+                                </div>
+                                
+                                {/* Equipment Filter */}
+                                <div>
+                                  <h4 className="text-sm font-medium text-white mb-2">Equipment</h4>
+                                  <div className="space-y-2">
+                                    {equipmentOptions.slice(0, 3).map(equipment => (
+                                      <label key={equipment} className="flex items-center text-xs text-gray-300">
+                                        <input
+                                          type="checkbox"
+                                          checked={filters.equipment.includes(equipment)}
+                                          onChange={() => handleMultiSelectFilter('equipment', equipment)}
+                                          className="rounded border-gray-600 text-purple-500 focus:ring-purple-500 bg-gray-700/50"
+                                        />
+                                        <span className="ml-2">{equipment}</span>
+                                      </label>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
                             </div>
                           )}
                         </div>
                         
-                        {/* Equipment Filter */}
-                        <div className="bg-gray-800/40 rounded-xl p-3">
-                          <button 
-                            className="flex justify-between items-center w-full text-left"
-                            onClick={() => toggleFilterCategory('equipment')}
-                          >
-                            <span className="text-sm font-medium text-white">Equipment</span>
-                            <FaChevronDown className={`transition-transform ${openFilterCategory === 'equipment' ? 'rotate-180' : ''}`} />
-                          </button>
-                          {openFilterCategory === 'equipment' && (
-                            <div className="mt-3 space-y-2">
-                              {equipmentOptions.map(equipment => (
-                                <label key={equipment} className="flex items-center text-sm text-gray-300">
-                                  <input
-                                    type="checkbox"
-                                    checked={filters.equipment.includes(equipment)}
-                                    onChange={() => handleMultiSelectFilter('equipment', equipment)}
-                                    className="rounded border-gray-600 text-purple-500 focus:ring-purple-500 bg-gray-700/50"
-                                  />
-                                  <span className="ml-2">{equipment}</span>
-                                </label>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        
-                        {/* Studio Type Filter */}
-                        <div className="bg-gray-800/40 rounded-xl p-3">
-                          <button 
-                            className="flex justify-between items-center w-full text-left"
-                            onClick={() => toggleFilterCategory('studioType')}
-                          >
-                            <span className="text-sm font-medium text-white">Studio Type</span>
-                            <FaChevronDown className={`transition-transform ${openFilterCategory === 'studioType' ? 'rotate-180' : ''}`} />
-                          </button>
-                          {openFilterCategory === 'studioType' && (
-                            <div className="mt-3 space-y-2">
-                              {studioTypeOptions.map(type => (
-                                <label key={type} className="flex items-center text-sm text-gray-300">
-                                  <input
-                                    type="checkbox"
-                                    checked={filters.studioType.includes(type)}
-                                    onChange={() => handleMultiSelectFilter('studioType', type)}
-                                    className="rounded border-gray-600 text-purple-500 focus:ring-purple-500 bg-gray-700/50"
-                                  />
-                                  <span className="ml-2">{type}</span>
-                                </label>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        
-                        {/* Languages Filter */}
-                        <div className="bg-gray-800/40 rounded-xl p-3">
-                          <button 
-                            className="flex justify-between items-center w-full text-left"
-                            onClick={() => toggleFilterCategory('languages')}
-                          >
-                            <span className="text-sm font-medium text-white">Languages</span>
-                            <FaChevronDown className={`transition-transform ${openFilterCategory === 'languages' ? 'rotate-180' : ''}`} />
-                          </button>
-                          {openFilterCategory === 'languages' && (
-                            <div className="mt-3 space-y-2">
-                              {languageOptions.map(language => (
-                                <label key={language} className="flex items-center text-sm text-gray-300">
-                                  <input
-                                    type="checkbox"
-                                    checked={filters.languages.includes(language)}
-                                    onChange={() => handleMultiSelectFilter('languages', language)}
-                                    className="rounded border-gray-600 text-purple-500 focus:ring-purple-500 bg-gray-700/50"
-                                  />
-                                  <span className="ml-2">{language}</span>
-                                </label>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Main Content */}
-                  <div className="flex-1">
-                    {/* Enhanced Search Bar */}
-                    <div className="flex flex-col sm:flex-row gap-4 mb-6">
-                      <div className="relative flex-1">
-                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                          </svg>
-                        </div>
-                        <input
-                          type="text"
-                          placeholder="Search studios by name, location, or genre..."
-                          className="w-full bg-gray-900/70 backdrop-blur border border-gray-700 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent transition-all"
-                          value={searchTerm}
-                          onChange={handleSearch}
-                        />
-                      </div>
-                      <button 
-                        className="lg:hidden bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-xl flex items-center justify-center transition-all font-special-regular"
-                        onClick={() => setShowFilters(!showFilters)}
-                      >
-                        {showFilters ? (
-                          <>
-                            <FaTimes className="h-5 w-5 mr-2" />
-                            Hide Filters
-                          </>
-                        ) : (
-                          <>
-                            <FaFilter className="h-5 w-5 mr-2" />
-                            Show Filters
-                          </>
-                        )}
-                      </button>
-                    </div>
-                    
-                    {/* Horizontal Filter Bar for Desktop */}
-                    <div className="hidden lg:flex flex-wrap gap-3 mb-6 bg-gray-900/70 backdrop-blur rounded-xl p-4 border border-gray-700/50 relative z-30">
-                      {/* Location Filter */}
-                      <div className="relative group">
-                        <button 
-                          className="flex items-center gap-2 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 py-2 px-4 rounded-xl transition-all text-sm"
-                          onClick={() => toggleFilterCategory('location')}
-                        >
-                          <FaMapMarkerAlt className="text-purple-400" />
-                          Location
-                          <FaChevronDown className={`text-xs transition-transform ${openFilterCategory === 'location' ? 'rotate-180' : ''}`} />
-                        </button>
-                        {openFilterCategory === 'location' && (
-                          <div className="absolute top-full left-0 mt-2 z-50 bg-gray-800/90 backdrop-blur-lg rounded-xl p-4 min-w-[250px] shadow-2xl border border-gray-700">
-                            <div className="relative">
-                              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
-                                <FaMapMarkerAlt className="h-4 w-4" />
-                              </div>
-                              <input
-                                type="text"
-                                placeholder="Enter location"
-                                className="w-full bg-gray-700/70 border border-gray-600 rounded-lg py-2 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent text-sm"
-                                value={filters.location}
-                                onChange={(e) => handleFilterChange('location', e.target.value)}
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Genre Filter */}
-                      <div className="relative group">
-                        <button 
-                          className="flex items-center gap-2 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 py-2 px-4 rounded-xl transition-all text-sm"
-                          onClick={() => toggleFilterCategory('genre')}
-                        >
-                          <FaMusic className="text-purple-400" />
-                          Genre
-                          <FaChevronDown className={`text-xs transition-transform ${openFilterCategory === 'genre' ? 'rotate-180' : ''}`} />
-                        </button>
-                        {openFilterCategory === 'genre' && (
-                          <div className="absolute top-full left-0 mt-2 z-50 bg-gray-800/90 backdrop-blur-lg rounded-xl p-4 min-w-[250px] shadow-2xl border border-gray-700">
-                            <div className="relative">
-                              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
-                                <FaMusic className="h-4 w-4" />
-                              </div>
-                              <input
-                                type="text"
-                                placeholder="Search genre"
-                                className="w-full bg-gray-700/70 border border-gray-600 rounded-lg py-2 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent text-sm"
-                                value={filters.genre}
-                                onChange={(e) => handleFilterChange('genre', e.target.value)}
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Price Range Filter */}
-                      <div className="relative group">
-                        <button 
-                          className="flex items-center gap-2 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 py-2 px-4 rounded-xl transition-all text-sm"
-                          onClick={() => toggleFilterCategory('price')}
-                        >
-                          <span className="text-purple-400">$</span>
-                          Price
-                          <FaChevronDown className={`text-xs transition-transform ${openFilterCategory === 'price' ? 'rotate-180' : ''}`} />
-                        </button>
-                        {openFilterCategory === 'price' && (
-                          <div className="absolute top-full left-0 mt-2 z-50 bg-gray-800/90 backdrop-blur-lg rounded-xl p-4 min-w-[300px] shadow-2xl border border-gray-700">
-                            <div className="space-y-4">
-                              <div>
-                                <label className="block text-xs text-gray-400 mb-2">
-                                  ${filters.priceRange[0]} - ${filters.priceRange[1]}
-                                </label>
-                                <div className="space-y-2">
-                                  <input
-                                    type="range"
-                                    min="0"
-                                    max="200"
-                                    step="10"
-                                    value={filters.priceRange[0]}
-                                    onChange={(e) => handleFilterChange('priceRange', [parseInt(e.target.value), filters.priceRange[1]])}
-                                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-500"
-                                  />
-                                  <input
-                                    type="range"
-                                    min="0"
-                                    max="200"
-                                    step="10"
-                                    value={filters.priceRange[1]}
-                                    onChange={(e) => handleFilterChange('priceRange', [filters.priceRange[0], parseInt(e.target.value)])}
-                                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-500"
-                                  />
-                                </div>
-                                <div className="flex justify-between text-xs text-gray-400 mt-1">
-                                  <span>$0</span>
-                                  <span>$200</span>
-                                </div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2">
-                                <button 
-                                  className={`px-3 py-1.5 text-xs rounded-lg transition-all ${
-                                    filters.priceRange[0] === 0 && filters.priceRange[1] === 100
-                                      ? 'bg-purple-600 text-white'
-                                      : 'bg-gray-700/50 text-gray-300 hover:bg-gray-600/50'
-                                  }`}
-                                  onClick={() => handleFilterChange('priceRange', [0, 100])}
-                                >
-                                  Under $100
-                                </button>
-                                <button 
-                                  className={`px-3 py-1.5 text-xs rounded-lg transition-all ${
-                                    filters.priceRange[0] === 100 && filters.priceRange[1] === 200
-                                      ? 'bg-purple-600 text-white'
-                                      : 'bg-gray-700/50 text-gray-300 hover:bg-gray-600/50'
-                                  }`}
-                                  onClick={() => handleFilterChange('priceRange', [100, 200])}
-                                >
-                                  Premium
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Availability Filter */}
-                      <div className="relative group">
-                        <button 
-                          className="flex items-center gap-2 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 py-2 px-4 rounded-xl transition-all text-sm"
-                          onClick={() => toggleFilterCategory('availability')}
-                        >
-                          <FaCalendarAlt className="text-purple-400" />
-                          Availability
-                          <FaChevronDown className={`text-xs transition-transform ${openFilterCategory === 'availability' ? 'rotate-180' : ''}`} />
-                        </button>
-                        {openFilterCategory === 'availability' && (
-                          <div className="absolute top-full left-0 mt-2 z-50 bg-gray-800/90 backdrop-blur-lg rounded-xl p-4 min-w-[200px] shadow-2xl border border-gray-700">
-                            <div className="space-y-2">
-                              {availabilityOptions.map(day => (
-                                <label key={day} className="flex items-center text-sm text-gray-300">
-                                  <input
-                                    type="checkbox"
-                                    checked={filters.availability.includes(day)}
-                                    onChange={() => handleMultiSelectFilter('availability', day)}
-                                    className="rounded border-gray-600 text-purple-500 focus:ring-purple-500 bg-gray-700/50"
-                                  />
-                                  <span className="ml-2">{day}</span>
-                                </label>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Services Filter */}
-                      <div className="relative group">
-                        <button 
-                          className="flex items-center gap-2 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 py-2 px-4 rounded-xl transition-all text-sm"
-                          onClick={() => toggleFilterCategory('services')}
-                        >
-                          <FaMusic className="text-purple-400" />
-                          Services
-                          <FaChevronDown className={`text-xs transition-transform ${openFilterCategory === 'services' ? 'rotate-180' : ''}`} />
-                        </button>
-                        {openFilterCategory === 'services' && (
-                          <div className="absolute top-full left-0 mt-2 z-50 bg-gray-800/90 backdrop-blur-lg rounded-xl p-4 min-w-[200px] shadow-2xl border border-gray-700">
-                            <div className="space-y-2">
-                              {serviceOptions.map(service => (
-                                <label key={service} className="flex items-center text-sm text-gray-300">
-                                  <input
-                                    type="checkbox"
-                                    checked={filters.services.includes(service)}
-                                    onChange={() => handleMultiSelectFilter('services', service)}
-                                    className="rounded border-gray-600 text-purple-500 focus:ring-purple-500 bg-gray-700/50"
-                                  />
-                                  <span className="ml-2">{service}</span>
-                                </label>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* More Filters Button */}
-                      <div className="relative group">
-                        <button 
-                          className="flex items-center gap-2 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 py-2 px-4 rounded-xl transition-all text-sm"
-                          onClick={() => toggleFilterCategory('more')}
-                        >
-                          <FaFilter className="text-purple-400" />
-                          More Filters
-                          <FaChevronDown className={`text-xs transition-transform ${openFilterCategory === 'more' ? 'rotate-180' : ''}`} />
-                        </button>
-                        {openFilterCategory === 'more' && (
-                          <div className="absolute top-full right-0 mt-2 z-50 bg-gray-800/90 backdrop-blur-lg rounded-xl p-4 w-[300px] shadow-2xl border border-gray-700">
-                            <div className="grid grid-cols-2 gap-4">
-                              {/* Amenities Filter */}
-                              <div>
-                                <h4 className="text-sm font-medium text-white mb-2">Amenities</h4>
-                                <div className="space-y-2">
-                                  {amenityOptions.map(amenity => (
-                                    <label key={amenity} className="flex items-center text-xs text-gray-300">
-                                      <input
-                                        type="checkbox"
-                                        checked={filters.amenities.includes(amenity)}
-                                        onChange={() => handleMultiSelectFilter('amenities', amenity)}
-                                        className="rounded border-gray-600 text-purple-500 focus:ring-purple-500 bg-gray-700/50"
-                                      />
-                                      <span className="ml-2">{amenity}</span>
-                                    </label>
-                                  ))}
-                                </div>
-                              </div>
-                              
-                              {/* Equipment Filter */}
-                              <div>
-                                <h4 className="text-sm font-medium text-white mb-2">Equipment</h4>
-                                <div className="space-y-2">
-                                  {equipmentOptions.slice(0, 3).map(equipment => (
-                                    <label key={equipment} className="flex items-center text-xs text-gray-300">
-                                      <input
-                                        type="checkbox"
-                                        checked={filters.equipment.includes(equipment)}
-                                        onChange={() => handleMultiSelectFilter('equipment', equipment)}
-                                        className="rounded border-gray-600 text-purple-500 focus:ring-purple-500 bg-gray-700/50"
-                                      />
-                                      <span className="ml-2">{equipment}</span>
-                                    </label>
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Reset Filters Button */}
-                      <button 
-                        onClick={resetFilters}
-                        className="flex items-center gap-2 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 py-2 px-4 rounded-xl transition-all text-sm"
-                      >
-                        <FaTimes className="text-purple-400" />
-                        Clear All Filters
-                      </button>
-                    </div>
-                    
-                    {/* Results Info */}
-                    <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-                      <div>
-                        <h2 className="text-xl font-special-regular text-white">
-                          {filteredStudios.length} Studio{filteredStudios.length !== 1 ? 's' : ''} Found
-                        </h2>
-                        <p className="text-gray-500 text-sm fonts-pecial-regular">
-                          {filters.location ? `in ${filters.location}` : 'Worldwide'} • 
-                          {filters.genre ? ` ${filters.genre} genre` : ' All genres'}
-                        </p>
-                      </div>
-
-                    </div>
-                    
-                    {/* Loading Skeleton */}
-                    {loading && (
-                      <div className="space-y-6">
-                        {[1, 2, 3].map((item) => (
-                          <motion.div 
-                            key={item}
-                            className="bg-gray-900/50 backdrop-blur rounded-2xl p-6"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ duration: 0.3 }}
-                          >
-                            <div className="flex flex-col md:flex-row gap-6 animate-pulse">
-                              <div className="bg-gray-800 rounded-xl w-full md:w-64 h-48"></div>
-                              <div className="flex-1 space-y-4">
-                                <div className="h-6 bg-gray-800 rounded w-1/3"></div>
-                                <div className="h-4 bg-gray-800 rounded w-1/4"></div>
-                                <div className="flex flex-wrap gap-2">
-                                  {[1, 2, 3].map(tag => (
-                                    <div key={tag} className="h-6 bg-gray-800 rounded-full w-16"></div>
-                                  ))}
-                                </div>
-                                <div className="h-4 bg-gray-800 rounded w-3/4"></div>
-                                <div className="h-4 bg-gray-800 rounded w-2/3"></div>
-                              </div>
-                            </div>
-                          </motion.div>
-                        ))}
-                      </div>
-                    )}
-                    
-                    {/* Results */}
-                    {!loading && filteredStudios.length > 0 ? (
-                      <StudioCardGrid studios={filteredStudios} />
-                    ) : !loading ? (
-                      <motion.div 
-                        className="text-center py-12"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.5 }}
-                      >
-                        <div className="bg-gray-900/50 backdrop-blur rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-500" fill="none" viewBox="0 0 24 极速24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </div>
-                        <h3 className="text-xl font-semibold text-white mb-2 font-special-regular">No studios found</h3>
-                        <p className="text-gray-500 max-w-md mx-auto mb-6 font-special-regular">
-                          Try adjusting your search or filters. We couldn't find any studios matching your criteria.
-                        </p>
+                        {/* Reset Filters Button */}
                         <button 
                           onClick={resetFilters}
-                          className="bg-purple-600 hover:bg-purple-700 text-white py-2.5 px-6 rounded-xl transition-all transform hover:-translate-y-0.5 font-special-regular"
+                          className="flex items-center gap-2 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 py-2 px-4 rounded-xl transition-all text-sm"
                         >
-                          Reset Filters
+                          <FaTimes className="text-purple-400" />
+                          Clear All Filters
                         </button>
-                      </motion.div>
-                    ) : null}
+                      </div>
+                      
+                      {/* Results Info */}
+                      <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+                        <div>
+                          <h2 className="text-xl font-special-regular text-white">
+                            {filteredStudios.length} Studio{filteredStudios.length !== 1 ? 's' : ''} Found
+                          </h2>
+                          <p className="text-gray-500 text-sm font-special-regular">
+                            {filters.location ? `in ${filters.location}` : 'Worldwide'} • 
+                            {filters.genre ? ` ${filters.genre} genre` : ' All genres'}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* Loading Skeleton */}
+                      {loading && (
+                        <div className="space-y-6">
+                          {[1, 2, 3].map((item) => (
+                            <motion.div 
+                              key={item}
+                              className="bg-gray-900/50 backdrop-blur rounded-2xl p-6"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              transition={{ duration: 0.3 }}
+                            >
+                              <div className="flex flex-col md:flex-row gap-6 animate-pulse">
+                                <div className="bg-gray-800 rounded-xl w-full md:w-64 h-48"></div>
+                                <div className="flex-1 space-y-4">
+                                  <div className="h-6 bg-gray-800 rounded w-1/3"></div>
+                                  <div className="h-4 bg-gray-800 rounded w-1/4"></div>
+                                  <div className="flex flex-wrap gap-2">
+                                    {[1, 2, 3].map(tag => (
+                                      <div key={tag} className="h-6 bg-gray-800 rounded-full w-16"></div>
+                                    ))}
+                                  </div>
+                                  <div className="h-4 bg-gray-800 rounded w-3/4"></div>
+                                  <div className="h-4 bg-gray-800 rounded w-2/3"></div>
+                                </div>
+                              </div>
+                            </motion.div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Results */}
+                      {!loading && filteredStudios.length > 0 ? (
+                        <EnhancedStudioCardGrid studios={filteredStudios} />
+                      ) : !loading ? (
+                        <motion.div 
+                          className="text-center py-12"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ duration: 0.5 }}
+                        >
+                          <div className="bg-gray-900/50 backdrop-blur rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </div>
+                          <h3 className="text-xl font-semibold text-white mb-2 font-special-regular">No studios found</h3>
+                          <p className="text-gray-500 max-w-md mx-auto mb-6 font-special-regular">
+                            Try adjusting your search or filters. We couldn't find any studios matching your criteria.
+                          </p>
+                          <button 
+                            onClick={resetFilters}
+                            className="bg-purple-600 hover:bg-purple-700 text-white py-2.5 px-6 rounded-xl transition-all transform hover:-translate-y-0.5 font-special-regular"
+                          >
+                            Reset Filters
+                          </button>
+                        </motion.div>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </motion.div>
-          )}
+              </motion.div>
+            )}
+            
+            {/* Dashboard Tab */}
+            {activeTab === 'dashboard' && (
+              <motion.div
+                key="dashboard"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <EnhancedDashboardSection bookings={bookings} />
+              </motion.div>
+            )}
+            
+            {/* Points Tab */}
+            {activeTab === 'points' && (
+              <motion.div
+                key="points"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <PointsSection />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+        
+        {/* Global Styles */}
+        <style jsx global>{`
+          @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+          }
           
-          {/* Dashboard Tab */}
-          {activeTab === 'dashboard' && (
-            <motion.div
-              key="dashboard"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <EnhancedDashboardSection bookings={bookings} />
-            </motion.div>
-          )}
+          @keyframes pulse-slow {
+            0%, 100% { opacity: 0.1; }
+            50% { opacity: 0.15; }
+          }
           
+          @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
           
-          {/* Points Tab */}
-          {activeTab === 'points' && (
-            <motion.div
-              key="points"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <PointsSection />
-            </motion.div>
-          )}
-        </AnimatePresence>
+          .animate-gradient {
+            background-size: 400% 400%;
+            animation: gradient 20s ease infinite;
+          }
+          
+          .animate-pulse-slow {
+            animation: pulse-slow 6s ease-in-out infinite;
+          }
+          
+          .animate-rotate {
+            animation: rotate 60s linear infinite;
+          }
+          
+          ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+          }
+          
+          ::-webkit-scrollbar-track {
+            background: rgba(15, 15, 15, 0.1);
+          }
+          
+          ::-webkit-scrollbar-thumb {
+            background: rgba(126, 34, 206, 0.5);
+            border-radius: 4px;
+          }
+          
+          ::-webkit-scrollbar-thumb:hover {
+            background: rgba(126, 34, 206, 0.8);
+          }
+        `}</style>
       </div>
-      
-      {/* Global Styles for Animated Background */}
-      <style jsx global>{`
-        @keyframes gradient {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        
-        @keyframes pulse-slow {
-          0%, 极速100% { opacity: 0.1; }
-          50% { opacity: 0.15; }
-        }
-        
-        @keyframes rotate {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        
-        .animate-gradient {
-          background-size: 400% 400%;
-          animation: gradient 20s ease infinite;
-        }
-        
-        .animate-pulse-slow {
-          animation: pulse-slow 6s ease-in-out infinite;
-        }
-        
-        .animate-rotate {
-          animation: rotate 60s linear infinite;
-        }
-        
-        /* Modern scrollbar */
-        ::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
-        }
-        
-        ::-webkit-scrollbar-track {
-          background: rgba(15, 15, 15, 0.1);
-        }
-        
-        ::-webkit-scrollbar-thumb {
-          background: rgba(126, 34, 206, 0.5);
-          border-radius: 4px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-          background: rgba(126, 34, 206, 0.8);
-        }
-      `}</style>
-    </div>
   );
 };
 

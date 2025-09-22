@@ -143,7 +143,7 @@ const StudioDetailsPage = ({ params }: { params: { id: string } }) => {
   };
 
   // Function to handle adding a review
-  const handleAddReview = () => {
+  /*const handleAddReview = () => {
     if (newReviewRating === 0 || newReviewComment.trim() === '') return;
     
     const newReview = {
@@ -164,13 +164,9 @@ const StudioDetailsPage = ({ params }: { params: { id: string } }) => {
     // Reset form
     setNewReviewRating(0);
     setNewReviewComment('');
-  };
+  };*/
 
-  // Toggle favorite status
-  const toggleFavorite = () => {
-    setIsFavorite(!isFavorite);
-    // In a real app, you would send an API request here to update favorite status
-  };
+
 
   useEffect(() => {
     // Simulate API call
@@ -244,18 +240,7 @@ const StudioDetailsPage = ({ params }: { params: { id: string } }) => {
             <div className="text-white">
               <div className="flex items-start justify-between">
                 <h1 className="text-3xl md:text-4xl font-bold">{studio.name}</h1>
-                {/* Favorite Button */}
-                <button 
-                  onClick={toggleFavorite}
-                  className="ml-4 p-2 bg-gray-800/70 backdrop-blur-md rounded-full hover:bg-purple-900/40 transition-colors"
-                  aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-                >
-                  {isFavorite ? (
-                    <FaHeart className="text-xl text-purple-400" />
-                  ) : (
-                    <FaRegHeart className="text-xl text-gray-400" />
-                  )}
-                </button>
+
               </div>
               <div className="flex items-center gap-2 mt-2">
                 <div className="flex text-lg">
@@ -527,57 +512,7 @@ const StudioDetailsPage = ({ params }: { params: { id: string } }) => {
                 >
                   <h2 className="text-2xl font-bold text-white mb-6">Customer Reviews</h2>
                   
-                  {/* Add Review Form */}
-                  <div className="bg-gray-900/50 p-5 rounded-xl border border-gray-700 mb-6">
-                    <h3 className="text-lg font-semibold text-white mb-4">Add Your Review</h3>
-                    
-                    <div className="space-y-4">
-                      {/* Rating */}
-                      <div>
-                        <label className="block text-gray-400 mb-2">Your Rating</label>
-                        <div className="flex items-center">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <button
-                              key={star}
-                              type="button"
-                              onClick={() => setNewReviewRating(star)}
-                              className="text-yellow-400 text-xl focus:outline-none"
-                            >
-                              {star <= newReviewRating ? (
-                                <FaStarSolid />
-                              ) : (
-                                <FaRegStar className="text-gray-500" />
-                              )}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      
-                      {/* Comment */}
-                      <div>
-                        <label className="block text-gray-400 mb-2">Your Review</label>
-                        <textarea
-                          value={newReviewComment}
-                          onChange={(e) => setNewReviewComment(e.target.value)}
-                          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-600"
-                          rows={3}
-                          placeholder="Share your experience with this studio..."
-                        />
-                      </div>
-                      
-                      {/* Submit Button */}
-                      <div className="flex justify-end">
-                        <button
-                          type="button"
-                          onClick={handleAddReview}
-                          className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-2 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all"
-                          disabled={newReviewRating === 0 || newReviewComment.trim() === ''}
-                        >
-                          Submit Review
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                  
                   
                   {/* Reviews List */}
                   <div className="space-y-6">
@@ -591,13 +526,13 @@ const StudioDetailsPage = ({ params }: { params: { id: string } }) => {
                           <div>
                             <h3 className="text-lg font-semibold text-white">You</h3>
                             <div className="flex text-yellow-400 mt-1">
-                              {renderStars(userReview.rating)}
+                              {renderStars((userReview as any).rating)}
                             </div>
                           </div>
-                          <span className="text-gray-500 text-sm">{userReview.date}</span>
+                          <span className="text-gray-500 text-sm">{(userReview as any).date}</span>
                         </div>
                         
-                        <p className="text-gray-300 mt-4">{userReview.comment}</p>
+                        <p className="text-gray-300 mt-4">{(userReview as any).comment}</p>
                       </div>
                     )}
                     
@@ -631,18 +566,7 @@ const StudioDetailsPage = ({ params }: { params: { id: string } }) => {
             <div className="sticky top-24 bg-gray-800/30 backdrop-blur-lg rounded-2xl p-6 border border-gray-700/50 shadow-2xl">
               <div className="flex justify-between items-start mb-6">
                 <h2 className="text-xl font-bold text-white">Booking Details</h2>
-                {/* Favorite button in booking card */}
-                <button 
-                  onClick={toggleFavorite}
-                  className="p-2 bg-gray-700/50 backdrop-blur-md rounded-full hover:bg-purple-900/40 transition-colors"
-                  aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-                >
-                  {isFavorite ? (
-                    <FaHeart className="text-xl text-purple-400" />
-                  ) : (
-                    <FaRegHeart className="text-xl text-gray-400" />
-                  )}
-                </button>
+                
               </div>
               
               <div className="space-y-4">
@@ -770,17 +694,7 @@ const StudioDetailsPage = ({ params }: { params: { id: string } }) => {
       {/* Fixed Book Now Button (Mobile) */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-gray-800/90 backdrop-blur-sm border-t border-gray-700 p-4">
         <div className="flex items-center justify-between">
-          <button 
-            onClick={toggleFavorite}
-            className="p-3 bg-gray-700/50 backdrop-blur-md rounded-full hover:bg-purple-900/40 transition-colors"
-            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-          >
-            {isFavorite ? (
-              <FaHeart className="text-xl text-purple-400" />
-            ) : (
-              <FaRegHeart className="text-xl text-gray-400" />
-            )}
-          </button>
+
           <button
             onClick={() => setShowBookingDialog(true)}
             className="flex-1 ml-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold py-3 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all"

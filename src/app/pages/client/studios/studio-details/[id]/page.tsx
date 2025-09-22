@@ -13,7 +13,7 @@ import {
 import { FaStar as FaStarSolid, FaStarHalfAlt, FaRegStar } from 'react-icons/fa';
 import { Studio_details } from '../../../types';
 import { useParams } from 'next/navigation';
-import { addFavorite, createReview, getStudioDetailsById } from '../../../service/api';
+import { addFavorite, createReview, getStudioDetailsById, getReviews } from '../../../service/api';
 import { useRouter } from 'next/navigation';
 
 
@@ -22,7 +22,7 @@ import { useRouter } from 'next/navigation';
 const StudioDetailsPage = () => {
 
   const router = useRouter();
-  const params = useParams(); // Use hook to get params
+  const params = useParams();
   const id = params?.id; 
 
   const [studio, setStudio] = useState<Studio_details | null>(null);
@@ -33,22 +33,7 @@ const StudioDetailsPage = () => {
 
 
   // Add these to your component state
-  const [reviews, setReviews] = useState([
-    {
-      id: 1,
-      user: "Alex Johnson",
-      rating: 5,
-      comment: "Amazing studio with top-notch equipment! The sound engineer really knew his stuff and helped us get the perfect sound for our EP.",
-      date: "2025-08-15"
-    },
-    {
-      id: 2,
-      user: "Maria Garcia",
-      rating: 4,
-      comment: "The acoustics in this studio are incredible. We recorded our jazz album here and couldn't be happier with the results. Will definitely return!",
-      date: "2025-07-28"
-    }
-  ]);
+  const [reviews, setReviews] = useState<any[]>([]);
 
   const [userReview, setUserReview] = useState({
       id: 0,
@@ -59,6 +44,13 @@ const StudioDetailsPage = () => {
     });
   const [newReviewRating, setNewReviewRating] = useState(0);
   const [newReviewComment, setNewReviewComment] = useState('');
+
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const userId = localStorage.getItem("user_id");
+    setUserId(userId);
+  }, []);
 
   // Helper function to render stars
   const renderStars = (rating: number) => {
@@ -89,13 +81,17 @@ const StudioDetailsPage = () => {
       })
     };
 
+
+    
+
     const backendReview = {
-      artist_id: 1,
-      studio_id: id, 
-      rating: newReviewRating, 
-      comment: newReviewComment, 
-      review_date: newReview.date
+      artist_id: Number(userId),
+      studio_id: Number(id),
+      rating: Number(newReviewRating),
+      comment: newReviewComment,
+      review_date: new Date().toISOString().slice(0, 19).replace('T', ' ')
     }
+    
 
     createReview(backendReview)    
     // Set as user's review
@@ -146,6 +142,28 @@ const StudioDetailsPage = () => {
       setLoading(false);
       setIsFavorite(Math.random() > 0.5);
     }, 500);
+  }, [id]);
+
+  // fetch reviews for this studio
+  useEffect(() => {
+    if (!id) return;
+    const studioId = parseInt(id as string, 10);
+    async function fetchReviews(studioId: number) {
+      try {
+        const data = await getReviews(studioId);
+        const mapped = (data || []).map((item: any) => ({
+          id: item.id,
+          user: item.user_id ? `User ${item.user_id}` : 'Anonymous',
+          rating: item.rating,
+          comment: item.comment,
+          date: item.date,
+        }));
+        setReviews(mapped);
+      } catch (error) {
+        console.error('Failed to load reviews', error);
+      }
+    }
+    fetchReviews(studioId);
   }, [id]);
 
   if (loading) {

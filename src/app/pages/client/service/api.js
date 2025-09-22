@@ -17,6 +17,7 @@ export async function getAllStudios() {
     avatar: s.avatar || "/studio/avatar.png",
     coverPhoto: s.coverPhoto || "/studio/cover.jpg",
     rating: s.rating,
+    level: s.level,
     location: s.location,
     types: s.types,
     genres: s.genres,
@@ -165,6 +166,7 @@ export async function getFavoriteStudio(id) {
     avatar: s.avatar || "/studio/avatar.png",
     coverPhoto: s.coverPhoto || "/studio/cover.jpg",
     rating: s.rating,
+    level: s.level,
     location: s.location,
     types: s.types,
     genres: s.genres,
@@ -449,5 +451,41 @@ export async function addFavorite(data) {
     return response ;
   } catch (error) {
     console.error('Error creating favorite:', error);
+  }
+}
+
+
+export async function getGamificationData(userId) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/studio/${userId}/gamification`);
+    
+    if (!res.ok) {
+      throw new Error("Failed to fetch gamification data");
+    }
+
+    const backendData = await res.json();
+
+    // Transform the backend data to UI format
+    const gamificationUI = {
+      gamification_id: backendData.gamification_id,
+      user_id: backendData.user_id,
+      user_type: backendData.user_type,
+      points: backendData.points,
+      normal_level: backendData.normal_level,
+      xp_level: backendData.xp_level,
+      last_level_up: backendData.last_level_up,
+      created_at: backendData.created_at,
+      updated_at: backendData.updated_at,
+      perks: backendData.perks ? backendData.perks.split(',') : [],
+      rewards: backendData.rewards ? backendData.rewards.split(',') : []
+    };
+
+    console.log("Gamification API method worked successfully");
+    console.log(gamificationUI);
+
+    return gamificationUI;
+  } catch (error) {
+    console.error("Error in getGamificationData:", error);
+    throw error;
   }
 }

@@ -6,7 +6,7 @@ import NotificationDropdown from '@/app/components/NotificationDropdown';
 import StudioProfileDropdown from '@/app/components/StudioProfileDropdown';
 import { Booking, Service, Review, Studio, Earning } from '../types';
 import {addServiceBackend, ApideleteService, getBookings, getEarningData, getServices, getStudioProfile, getStudioReview, updateBookingStatus, updateServiceBackend} from '../services/api.js'
-
+import StudioGamification from '@/app/components/StudioGamification';
 
 
 const StudioDashboard = () => {
@@ -151,8 +151,11 @@ const StudioDashboard = () => {
     { id: 'bookings', label: 'Bookings', icon: <FaCalendarCheck /> },
     { id: 'services', label: 'Services', icon: <FaCog /> },
     { id: 'earnings', label: 'Earnings', icon: <FaMoneyBillWave /> },
-    { id: 'reviews', label: 'Reviews', icon: <FaStar /> }
+    { id: 'reviews', label: 'Reviews', icon: <FaStar /> },
+    { id: 'gamification', label: 'Levels', icon: <FaStar /> } // Add this line
   ];
+
+  
 
   // Handle booking status change
   const handleBookingAction = (id: number, action: 'accept' | 'reject') => {
@@ -843,6 +846,11 @@ const StudioDashboard = () => {
     </div>
   );
 
+  // Add this render method for the gamification tab
+  const renderGamificationTab = () => (
+    <StudioGamification studioId={202} />
+  );
+
   return (
     <div className="min-h-screen relative overflow-hidden bg-gray-900">
       {/* Animated Background - Behind everything */}
@@ -852,69 +860,69 @@ const StudioDashboard = () => {
       </div>
       
       {/* Top Navigation Bar */}
-<div className="relative z-20 w-full">
-  <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
-    
-    {/* Logo - Left */}
-    <div className="flex justify-start">
-      <img 
-        src="/home/logo.png" 
-        className="w-14 h-10 md:h-15 md:w-20 hover:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] rounded-sm" 
-        alt="Logo"  
-      />
-    </div>
+      <div className="relative z-20 w-full">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+          
+          {/* Logo - Left */}
+          <div className="flex justify-start">
+            <img 
+              src="/home/logo.png" 
+              className="w-14 h-10 md:h-15 md:w-20 hover:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] rounded-sm" 
+              alt="Logo"  
+            />
+          </div>
 
-    {/* Tab Navigation - Center */}
-    <div className="flex justify-center w-full md:w-auto">
-      <div className="relative bg-gray-800/50 backdrop-blur-lg rounded-full p-1 border border-gray-500 border-t-white/30 border-l-white/30 shadow-2xl">
-        <div className="flex flex-wrap md:flex-nowrap md:space-x-1 space-x-0.5 justify-center">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              className={`font-special relative px-4 md:px-5 py-2 rounded-full text-sm font-medium transition-colors duration-300 flex items-center ${
-                activeTab === tab.id
-                  ? 'text-white opacity-100 drop-shadow-[0_0_8px_rgba(147,51,234,0.8)]'
-                  : 'text-white opacity-50 hover:text-gray-400'
-              }`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {/* Background highlight */}
-              {activeTab === tab.id && (
-                <motion.div
-                  className="absolute inset-0 rounded-full bg-purple-600/30 backdrop-blur-3xl z-0"
-                  layoutId="activeTab"
-                  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                />
-              )}
+          {/* Tab Navigation - Center */}
+          <div className="flex justify-center w-full md:w-auto">
+            <div className="relative bg-gray-800/50 backdrop-blur-lg rounded-full p-1 border border-gray-500 border-t-white/30 border-l-white/30 shadow-2xl">
+              <div className="flex flex-wrap md:flex-nowrap md:space-x-1 space-x-0.5 justify-center">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    className={`font-special relative px-4 md:px-5 py-2 rounded-full text-sm font-medium transition-colors duration-300 flex items-center ${
+                      activeTab === tab.id
+                        ? 'text-white opacity-100 drop-shadow-[0_0_8px_rgba(147,51,234,0.8)]'
+                        : 'text-white opacity-50 hover:text-gray-400'
+                    }`}
+                    onClick={() => setActiveTab(tab.id)}
+                  >
+                    {/* Background highlight */}
+                    {activeTab === tab.id && (
+                      <motion.div
+                        className="absolute inset-0 rounded-full bg-purple-600/30 backdrop-blur-3xl z-0"
+                        layoutId="activeTab"
+                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                      />
+                    )}
 
-              {/* Foreground content */}
-              <div className="flex items-center relative z-10">
-                <span className="mr-2">{tab.icon}</span>
-                <span className="hidden sm:inline">{tab.label}</span>
+                    {/* Foreground content */}
+                    <div className="flex items-center relative z-10">
+                      <span className="mr-2">{tab.icon}</span>
+                      <span className="hidden sm:inline">{tab.label}</span>
+                    </div>
+                  </button>
+                ))}
               </div>
-            </button>
-          ))}
+            </div>
+          </div>
+
+          {/* Right Section */}
+          <div className="flex justify-end items-center space-x-3">
+            {/* Notification & Settings */}
+            <div className="flex items-center space-x-2">
+              <NotificationDropdown />
+            </div>
+            
+            {/* Studio Profile */}
+            <StudioProfileDropdown
+              studioProfile={{
+                name: studioData.studioName,
+                avatar: studioData.avatarImage || "/studio/avatar.png"
+              }}
+            />
+          </div>
         </div>
       </div>
-    </div>
-
-    {/* Right Section */}
-    <div className="flex justify-end items-center space-x-3">
-      {/* Notification & Settings */}
-      <div className="flex items-center space-x-2">
-        <NotificationDropdown />
-      </div>
-      
-      {/* Studio Profile */}
-      <StudioProfileDropdown
-        studioProfile={{
-          name: studioData.studioName,
-          avatar: studioData.avatarImage || "/studio/avatar.png"
-        }}
-      />
-    </div>
-  </div>
-</div>
 
 
       
@@ -1013,6 +1021,7 @@ const StudioDashboard = () => {
             {activeTab === 'services' && renderServicesTab()}
             {activeTab === 'earnings' && renderEarningsTab()}
             {activeTab === 'reviews' && renderReviewsTab()}
+            {activeTab === 'gamification' && renderGamificationTab()} // Add this line
           </motion.div>
         </AnimatePresence>
       </div>

@@ -4,6 +4,7 @@ export type Studio = {
   id: number,
   name: string,
   location: string,
+  level?: number,
   genres: string[],
   price: number,
   equipment: string[],
