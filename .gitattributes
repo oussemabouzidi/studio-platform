@@ -1,0 +1,2 @@
+public/vedio/recording.mp4 filter=lfs diff=lfs merge=lfs -text
+public/artist/auth.mov filter=lfs diff=lfs merge=lfs -text
