@@ -431,7 +431,7 @@ const apiGamificationStats = stats?.gamification
             {filteredStudios.map(studio => (
               <tr key={studio.id} className="hover:bg-gray-800/50 transition-colors">
                 <td className="px-2 py-4 md:px-4 whitespace-nowrap">
-                    <a href={`studio-details/${studio.id}`}>
+                    <a href={`/pages/admin/studio-details/${studio.id}`}>
                       <div className="text-sm font-medium text-white font-special-regular">{studio.name}</div>
                     </a>
                 </td>
@@ -472,6 +472,12 @@ const apiGamificationStats = stats?.gamification
                         Activate
                       </button>
                     )}
+                    <a 
+                      href={`/pages/admin/studio-details/${studio.id}`}
+                      className="text-blue-500 hover:text-blue-400 px-2 py-1 bg-blue-500/10 rounded-lg transition-colors text-xs sm:text-sm"
+                    >
+                      View Details
+                    </a>
                   </div>
                 </td>
               </tr>

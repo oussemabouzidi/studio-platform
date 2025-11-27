@@ -1,15 +1,15 @@
 'use client';
 import { useState, useEffect, useRef, useMemo } from 'react';
-import StudioCardGrid from '../../../components/StudioCardGrid';
 import PointsSection from '../../../components/PointsSection';
 import ArtistProfileDropdown from '../../../components/ArtistProfileDropdown ';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaMapMarkerAlt, FaStar, FaCalendarAlt, FaClock, FaMusic, FaFilter, FaTimes, FaChevronDown, FaCrown, FaRocket, FaFire, FaGem, FaAward, FaMedal, FaShieldAlt, FaStarHalfAlt } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaStar, FaCalendarAlt, FaClock, FaMusic, FaFilter, FaTimes, FaChevronDown, FaFire } from 'react-icons/fa';
 import NotificationDropdown from '@/app/components/NotificationDropdown';
 import FavoritesLink from '@/app/components/FavoritesLink';
 import {getAllStudios, getBookingsByArtist, getMiniProfile} from '../service/api'
 import { Booking, Reviews, Studio } from '../types';
 import { useRouter } from "next/navigation";
+import { StudioCard } from '../../../components/StudioCardGrid';
 
 // Custom icon for analytics
 const FaChartBar = () => (
@@ -18,19 +18,19 @@ const FaChartBar = () => (
   </svg>
 );
 
-// Perk configuration based on level
+// Perk configuration based on level (icons removed)
 const STUDIO_PERKS = {
   1: { name: "Basic", badge: null, description: "Listed in search, can receive bookings" },
-  2: { name: "Highlighted", badge: "Pro", color: "blue", icon: FaStarHalfAlt, description: "Highlighted profile with Pro badge" },
-  3: { name: "Ranking Boost", badge: "Boost", color: "green", icon: FaRocket, description: "Small ranking boost in search results" },
-  4: { name: "Featured", badge: "Featured", color: "purple", icon: FaFire, description: "Featured placement in local searches" },
-  5: { name: "Priority", badge: "Priority", color: "orange", icon: FaMedal, description: "Priority in category listings" },
-  6: { name: "Analytics", badge: "Analytics", color: "teal", icon: FaChartBar, description: "Premium analytics & insights" },
-  7: { name: "Headliner", badge: "Headliner", color: "red", icon: FaCrown, description: "Top search placement" },
-  8: { name: "Promo", badge: "Promo", color: "pink", icon: FaGem, description: "Exclusive promo campaigns" },
-  9: { name: "Legend", badge: "Legend", color: "yellow", icon: FaAward, description: "Lower commission (-1%)" },
-  10: { name: "Elite", badge: "Elite", color: "gradient", icon: FaShieldAlt, description: "Top banner placement, special media features" }
-};
+  2: { name: "Highlighted", badge: "Pro", color: "blue", description: "Highlighted profile with Pro badge" },
+  3: { name: "Ranking Boost", badge: "Boost", color: "green", description: "Small ranking boost in search results" },
+  4: { name: "Featured", badge: "Featured", color: "purple", description: "Featured placement in local searches" },
+  5: { name: "Priority", badge: "Priority", color: "orange", description: "Priority in category listings" },
+  6: { name: "Analytics", badge: "Analytics", color: "teal", description: "Premium analytics & insights" },
+  7: { name: "Headliner", badge: "Headliner", color: "red", description: "Top search placement" },
+  8: { name: "Promo", badge: "Promo", color: "pink", description: "Exclusive promo campaigns" },
+  9: { name: "Legend", badge: "Legend", color: "yellow", description: "Lower commission (-1%)" },
+  10: { name: "Elite", badge: "Elite", color: "gradient", description: "Top banner placement, special media features" }
+} as const;
 
 const StudiosPage = () => {
   const [studios, setStudios] = useState<Studio[]>([]);
@@ -123,9 +123,9 @@ const StudiosPage = () => {
     let score = studio.rating * 20; // Base score from rating
     
     // Level-based boosts (tiered system)
-    if (studio.level >= 3) score += 15; // Small ranking boost
-    if (studio.level >= 7) score += 30; // Top search placement boost
-    if (studio.level >= 10) score += 50; // Maximum boost for elite studios
+    if (studio.level! >= 3) score += 15; // Small ranking boost
+    if (studio.level! >= 7) score += 30; // Top search placement boost
+    if (studio.level! >= 10) score += 50; // Maximum boost for elite studios
     
     // Search term relevance
     if (searchTerm) {
@@ -158,7 +158,7 @@ const StudiosPage = () => {
 
   // Get featured studios (level 4+ for local searches)
   const getFeaturedStudios = (studiosList: Studio[]) => {
-    return studiosList.filter(studio => studio.level >= 4);
+    return studiosList.filter(studio => studio.level! >= 4);
   };
 
   // Get recommended studios based on artist preferences with perk consideration
@@ -190,200 +190,7 @@ const StudiosPage = () => {
   const recommendedStudios = getRecommendedStudios();
   const featuredStudios = getFeaturedStudios(studios);
 
-  // Enhanced studio card component with perk badges
-  const StudioCardWithPerks = ({ studio }: { studio: Studio }) => {
-    const perk = STUDIO_PERKS[studio.level as keyof typeof STUDIO_PERKS] || STUDIO_PERKS[1];
-    const IconComponent = perk.icon;
-    
-    const getBadgeColor = () => {
-      switch (perk.color) {
-        case 'blue': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-        case 'green': return 'bg-green-500/20 text-green-400 border-green-500/30';
-        case 'purple': return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
-        case 'orange': return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
-        case 'teal': return 'bg-teal-500/20 text-teal-400 border-teal-500/30';
-        case 'red': return 'bg-red-500/20 text-red-400 border-red-500/30';
-        case 'pink': return 'bg-pink-500/20 text-pink-400 border-pink-500/30';
-        case 'yellow': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
-        case 'gradient': return 'bg-gradient-to-r from-purple-500/30 to-pink-500/30 text-white border-purple-500/50';
-        default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
-      }
-    };
-
-    const getBorderGlow = () => {
-  if (studio.level >= 10) {
-    return `
-      border-2 border-transparent
-      bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-blue-500/20 bg-clip-border
-      shadow-[0_0_30px_rgba(147,51,234,0.4),0_0_60px_rgba(236,72,153,0.2),inset_0_1px_0_rgba(255,255,255,0.1)]
-      hover:shadow-[0_0_40px_rgba(147,51,234,0.6),0_0_80px_rgba(236,72,153,0.3),inset_0_1px_0_rgba(255,255,255,0.2)]
-      relative overflow-hidden
-      before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-r before:from-purple-600/10 before:via-pink-600/10 before:to-blue-600/10 before:animate-pulse
-      after:absolute after:inset-0 after:-z-20 after:bg-gradient-conic after:from-purple-500/20 after:via-pink-500/20 after:to-blue-500/20 after:animate-spin after:duration-[8s]
-      transition-all duration-500 ease-out
-    `.replace(/\s+/g, ' ').trim();
-  }
-  
-  if (studio.level >= 7) {
-    return `
-      border-2 border-transparent
-      bg-gradient-to-r from-red-500/15 via-orange-500/15 to-yellow-500/15 bg-clip-border
-      shadow-[0_0_25px_rgba(239,68,68,0.3),0_0_50px_rgba(251,146,60,0.2),inset_0_1px_0_rgba(255,255,255,0.08)]
-      hover:shadow-[0_0_35px_rgba(239,68,68,0.5),0_0_70px_rgba(251,146,60,0.3),inset_0_1px_0_rgba(255,255,255,0.15)]
-      relative
-      before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-r before:from-red-600/8 before:via-orange-600/8 before:to-yellow-600/8 before:animate-pulse before:duration-[3s]
-      transition-all duration-400 ease-out
-    `.replace(/\s+/g, ' ').trim();
-  }
-  
-  if (studio.level >= 5) {
-    return `
-      border-2 border-transparent
-      bg-gradient-to-r from-orange-500/12 via-amber-500/12 to-yellow-500/12 bg-clip-border
-      shadow-[0_0_20px_rgba(251,146,60,0.25),0_0_40px_rgba(245,158,11,0.15),inset_0_1px_0_rgba(255,255,255,0.06)]
-      hover:shadow-[0_0_30px_rgba(251,146,60,0.4),0_0_60px_rgba(245,158,11,0.25),inset_0_1px_0_rgba(255,255,255,0.12)]
-      transition-all duration-300 ease-out
-    `.replace(/\s+/g, ' ').trim();
-  }
-  
-  if (studio.level >= 3) {
-    return `
-      border-2 border-transparent
-      bg-gradient-to-r from-green-500/10 via-emerald-500/10 to-teal-500/10 bg-clip-border
-      shadow-[0_0_15px_rgba(34,197,94,0.2),0_0_30px_rgba(16,185,129,0.1),inset_0_1px_0_rgba(255,255,255,0.05)]
-      hover:shadow-[0_0_25px_rgba(34,197,94,0.35),0_0_50px_rgba(16,185,129,0.2),inset_0_1px_0_rgba(255,255,255,0.1)]
-      transition-all duration-300 ease-out
-    `.replace(/\s+/g, ' ').trim();
-  }
-  
-  if (studio.level >= 2) {
-    return `
-      border-2 border-transparent
-      bg-gradient-to-r from-blue-500/8 via-indigo-500/8 to-purple-500/8 bg-clip-border
-      shadow-[0_0_12px_rgba(59,130,246,0.15),0_0_24px_rgba(99,102,241,0.08),inset_0_1px_0_rgba(255,255,255,0.04)]
-      hover:shadow-[0_0_20px_rgba(59,130,246,0.3),0_0_40px_rgba(99,102,241,0.15),inset_0_1px_0_rgba(255,255,255,0.08)]
-      transition-all duration-300 ease-out
-    `.replace(/\s+/g, ' ').trim();
-  }
-  
-  return `
-    border border-gray-700/40
-    shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.02)]
-    hover:border-gray-600/60
-    hover:shadow-[0_4px_16px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.04)]
-    transition-all duration-200 ease-out
-  `.replace(/\s+/g, ' ').trim();
-};
-
-const getBackgroundGlow = () => {
-  if (studio.level >= 10) {
-    return `
-      bg-gradient-to-br from-gray-900/70 via-purple-900/20 to-pink-900/20
-      backdrop-blur-xl
-      relative
-      before:absolute before:inset-0 before:-z-10 before:bg-gradient-radial before:from-purple-500/5 before:via-transparent before:to-pink-500/5
-      after:absolute after:inset-0 after:-z-20 after:bg-[radial-gradient(ellipse_at_center,_rgba(147,51,234,0.08)_0%,_transparent_50%)] after:animate-pulse after:duration-[4s]
-    `.replace(/\s+/g, ' ').trim();
-  }
-  
-  if (studio.level >= 7) {
-    return `
-      bg-gradient-to-br from-gray-900/65 via-red-900/15 to-orange-900/15
-      backdrop-blur-lg
-      relative
-      before:absolute before:inset-0 before:-z-10 before:bg-gradient-radial before:from-red-500/4 before:via-transparent before:to-orange-500/4
-      after:absolute after:inset-0 after:-z-20 after:bg-[radial-gradient(ellipse_at_center,_rgba(239,68,68,0.06)_0%,_transparent_60%)]
-    `.replace(/\s+/g, ' ').trim();
-  }
-  
-  if (studio.level >= 5) {
-    return `
-      bg-gradient-to-br from-gray-900/60 via-orange-900/12 to-yellow-900/12
-      backdrop-blur-lg
-      relative
-      before:absolute before:inset-0 before:-z-10 before:bg-gradient-radial before:from-orange-500/3 before:via-transparent before:to-yellow-500/3
-    `.replace(/\s+/g, ' ').trim();
-  }
-  
-  if (studio.level >= 3) {
-    return `
-      bg-gradient-to-br from-gray-900/58 via-green-900/10 to-teal-900/10
-      backdrop-blur-md
-      relative
-      before:absolute before:inset-0 before:-z-10 before:bg-gradient-radial before:from-green-500/2 before:via-transparent before:to-teal-500/2
-    `.replace(/\s+/g, ' ').trim();
-  }
-  
-  if (studio.level >= 2) {
-    return `
-      bg-gradient-to-br from-gray-900/55 via-blue-900/8 to-indigo-900/8
-      backdrop-blur-md
-      relative
-      before:absolute before:inset-0 before:-z-10 before:bg-gradient-radial before:from-blue-500/2 before:via-transparent before:to-indigo-500/2
-    `.replace(/\s+/g, ' ').trim();
-  }
-  
-  return `
-    bg-gradient-to-br from-gray-900/45 to-gray-800/30
-    backdrop-blur-sm
-  `.replace(/\s+/g, ' ').trim();
-};
-
-    return (
-      <div className={`relative rounded-2xl p-4 backdrop-blur transition-all duration-300 hover:scale-105 ${getBorderGlow()} ${getBackgroundGlow()}`}>
-        {/* Perk Badge */}
-        {perk.badge && (
-          <div className={`absolute -top-2 -right-2 z-10 flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold border ${getBadgeColor()}`}>
-            {IconComponent && <IconComponent className="h-3 w-3" />}
-            <span>{perk.badge}</span>
-          </div>
-        )}
-        
-        {/* Studio Content */}
-        <div className="flex items-center mb-3">
-          <img 
-            src={studio.avatar} 
-            alt={studio.name}
-            className={`w-12 h-12 rounded-full object-cover mr-3 ${
-              studio.level >= 2 ? 'border-2 border-opacity-50' : 'border'
-            } ${
-              studio.level >= 5 ? 'border-yellow-500' : studio.level >= 2 ? 'border-blue-500' : 'border-gray-600'
-            }`}
-          />
-          <div>
-            <h3 className="font-bold text-white text-sm">{studio.name}</h3>
-            <div className="flex items-center text-xs text-gray-400">
-              <FaMapMarkerAlt className="mr-1 text-purple-400" size={10} />
-              <span>{studio.location}</span>
-            </div>
-          </div>
-        </div>
-        
-        <div className="flex flex-wrap gap-1 mb-3">
-          {studio.genres.slice(0, 2).map((genre, idx) => (
-            <span key={idx} className="bg-purple-900/30 text-purple-300 text-xs px-2 py-1 rounded-full">
-              {genre}
-            </span>
-          ))}
-          {studio.genres.length > 2 && (
-            <span className="bg-gray-800 text-gray-400 text-xs px-2 py-1 rounded-full">
-              +{studio.genres.length - 2}
-            </span>
-          )}
-        </div>
-        
-        <div className="flex justify-between items-center">
-          <div className="flex items-center">
-            <FaStar className="text-yellow-400 mr-1" size={12} />
-            <span className="text-sm">{studio.rating}</span>
-            <span className="text-gray-500 mx-1">•</span>
-            <span className="text-xs text-gray-400">Lvl {studio.level}</span>
-          </div>
-          <span className="text-sm font-bold text-purple-400">${studio.price}/hr</span>
-        </div>
-      </div>
-    );
-  };
+  // Removed in favor of shared StudioCard from components
 
   // Enhanced StudioCardGrid with perks
   const EnhancedStudioCardGrid = ({ studios: studiosToShow }: { studios: Studio[] }) => {
@@ -403,7 +210,7 @@ const getBackgroundGlow = () => {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {featuredStudios.slice(0, 3).map(studio => (
-                <StudioCardWithPerks key={studio.id} studio={studio} />
+                  <StudioCard key={studio.id} studio={studio} href={`/pages/client/studios/studio-details/${studio.id}`} />
               ))}
             </div>
           </div>
@@ -411,7 +218,7 @@ const getBackgroundGlow = () => {
         
         {/* Main Studios Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {rankedStudios.map(studio => (
+              {rankedStudios.map(studio => (
             <motion.div
               key={studio.id}
               initial={{ opacity: 0, y: 20 }}
@@ -419,7 +226,7 @@ const getBackgroundGlow = () => {
               transition={{ duration: 0.3 }}
               className="relative"
             >
-              <StudioCardWithPerks studio={studio} />
+              <StudioCard studio={studio} href={`/pages/client/studios/studio-details/${studio.id}`} />
             </motion.div>
           ))}
         </div>
@@ -584,7 +391,7 @@ const getBackgroundGlow = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {bookingsWithStudioDetails.map((booking) => {
-                const perk = STUDIO_PERKS[booking.studio.level as keyof typeof STUDIO_PERKS] || STUDIO_PERKS[1];
+                const perk = STUDIO_PERKS[booking.studio.level! as keyof typeof STUDIO_PERKS] || STUDIO_PERKS[1];
                 const IconComponent = perk.icon;
                 
                 return (
@@ -611,7 +418,7 @@ const getBackgroundGlow = () => {
                               <FaMapMarkerAlt className="mr-2 text-purple-400" />
                               <span>{booking.studio.location}</span>
                               <span className="mx-2">•</span>
-                              <span className="text-sm text-gray-500">Level {booking.studio.level}</span>
+                              <span className="text-sm text-gray-500">Level {booking.studio.level!}</span>
                             </div>
                           </div>
                           <div className="flex-shrink-0">
