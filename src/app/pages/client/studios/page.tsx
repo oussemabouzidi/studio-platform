@@ -32,6 +32,18 @@ const STUDIO_PERKS = {
   10: { name: "Elite", badge: "Elite", color: "gradient", description: "Top banner placement, special media features" }
 } as const;
 
+type StudioFilters = {
+  location: string;
+  genre: string;
+  availability: string[];
+  services: string[];
+  amenities: string[];
+  priceRange: [number, number];
+  equipment: string[];
+  studioType: string[];
+  languages: string[];
+};
+
 const StudiosPage = () => {
   const [studios, setStudios] = useState<Studio[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -40,7 +52,7 @@ const StudiosPage = () => {
   const [expanded, setExpanded] = useState(false);
   const [filteredStudios, setFilteredStudios] = useState(studios);
   const [activeTab, setActiveTab] = useState('search');
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<StudioFilters>({
       location: '',
       genre: '',
       availability: [],
@@ -368,8 +380,8 @@ const StudiosPage = () => {
             level: 1
           }
         };
-      }, [bookings, studios]);
-    });
+      });
+    }, [bookings, studios]);
 
     return (
       <div className="space-y-6">
@@ -389,10 +401,9 @@ const StudiosPage = () => {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {bookingsWithStudioDetails.map((booking) => {
                 const perk = STUDIO_PERKS[booking.studio.level! as keyof typeof STUDIO_PERKS] || STUDIO_PERKS[1];
-                const IconComponent = perk.icon;
                 
                 return (
                   <div key={booking.bookingId} className="bg-gray-900/50 backdrop-blur rounded-2xl p-6 border border-gray-700/50 transition-all hover:border-purple-500/50">
@@ -641,7 +652,11 @@ const StudiosPage = () => {
                     <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 backdrop-blur-sm rounded-xl border border-gray-500 border-t-white/30 border-l-white/30 md:p-8 shadow-2xl p-4">
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {recommendedStudios.slice(0, 3).map(studio => (
-                          <StudioCardWithPerks key={studio.id} studio={studio} />
+                          <StudioCard
+                            key={studio.id}
+                            studio={studio}
+                            href={`/pages/client/studios/studio-details/${studio.id}`}
+                          />
                         ))}
                       </div>
                     </div>

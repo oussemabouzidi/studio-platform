@@ -2,7 +2,16 @@ import { Fragment, useState } from 'react';
 import { Menu, Transition } from '@headlessui/react';
 import Link from 'next/link';
 
-const StudioProfileDropdown = ({ studioProfile  }) => {
+type StudioProfile = {
+  name: string;
+  avatar?: string | null;
+};
+
+type StudioProfileDropdownProps = {
+  studioProfile: StudioProfile;
+};
+
+const StudioProfileDropdown = ({ studioProfile }: StudioProfileDropdownProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const signout = () => {

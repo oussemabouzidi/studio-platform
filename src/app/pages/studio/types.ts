@@ -33,29 +33,27 @@ export type Service = {
 };
 
 export type Studio = {
-  location: string | number | readonly string[] | undefined;
-  location: string | number | readonly string[] | undefined;
-  studioTypes: unknown;
-  languages: unknown;
-  preferredGenres: unknown;
-  galleryImages: any;
-  schedule: any;
-  schedule: any;
   studioName: string;
   description: string;
   avatarImage: string | null;
+  location: string;
+  studioTypes: string[];
+  languages: string[];
+  preferredGenres: string[];
+  galleryImages: string[];
+  schedule: Record<string, { open: boolean; start: string; end: string }>;
   contact: {
-    website: string | number | readonly string[] | undefined;
-    instagram: string | number | readonly string[] | undefined;
-    soundcloud: string | number | readonly string[] | undefined;
-    youtube: string | number | readonly string[] | undefined;
+    website: string;
+    instagram: string;
+    soundcloud: string;
+    youtube: string;
     email: string;
     phone: string;
   };
   services: Service[];
   additionalInfo: {
-    rules: string | number | readonly string[] | undefined;
-    cancellationPolicy: string | number | readonly string[] | undefined;
+    rules: string;
+    cancellationPolicy: string;
     amenities: string[];
   };
   equipment: string[];

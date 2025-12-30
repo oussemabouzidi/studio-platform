@@ -50,6 +50,8 @@ export default function CreateStudioAccountPage() {
     preferredGenres: string[];
   };
 
+  type ListField = 'equipment' | 'studioTypes' | 'languages' | 'preferredGenres';
+
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormData>({
     studioName: '',
@@ -237,7 +239,7 @@ export default function CreateStudioAccountPage() {
   };
 
   // Add item to category
-  const addItem = (category: keyof FormData, value: string) => {
+  const addItem = (category: ListField, value: string) => {
     if (!value.trim()) return;
     
     setFormData(prev => {
@@ -260,7 +262,7 @@ export default function CreateStudioAccountPage() {
   };
 
   // Remove item from category
-  const removeItem = (category: keyof FormData, index: number) => {
+  const removeItem = (category: ListField, index: number) => {
     setFormData(prev => {
       const items = [...prev[category]] as string[];
       return {
@@ -426,7 +428,7 @@ export default function CreateStudioAccountPage() {
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       className="w-full px-4 py-2.5 bg-gray-700/40 border border-gray-600/50 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent outline-none transition-all duration-200 text-sm text-white font-special-regular"
-                      rows="3"
+                      rows={3}
                       placeholder="Describe your studio and services..."
                       required
                     ></textarea>
@@ -861,7 +863,7 @@ export default function CreateStudioAccountPage() {
                               value={newService.description}
                               onChange={handleNewServiceChange}
                               className="w-full px-3 py-2 bg-gray-700/50 border border-purple-400/30 rounded-lg text-sm text-white font-special-regular"
-                              rows="2"
+                              rows={2}
                               placeholder="Describe your service..."
                             ></textarea>
                           </div>
@@ -952,7 +954,7 @@ export default function CreateStudioAccountPage() {
                             }
                           }))}
                           className="w-full px-4 py-2.5 bg-gray-700/40 border border-gray-600/50 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent outline-none transition-all duration-200 text-sm text-white font-special-regular"
-                          rows="4"
+                          rows={4}
                           placeholder="List any specific rules for your studio..."
                         ></textarea>
                       </div>
@@ -969,7 +971,7 @@ export default function CreateStudioAccountPage() {
                             }
                           }))}
                           className="w-full px-4 py-2.5 bg-gray-700/40 border border-gray-600/50 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent outline-none transition-all duration-200 text-sm text-white font-special-regular"
-                          rows="3"
+                          rows={3}
                           placeholder="Describe your cancellation policy..."
                         ></textarea>
                       </div>

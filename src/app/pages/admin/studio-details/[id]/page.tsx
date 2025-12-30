@@ -48,7 +48,7 @@ type Studio = {
   cancellationPolicy?: string;
 };
 
-const StudioDetailsPage = ({ params }: { params: { id: string } }) => {
+const StudioDetailsPage = ({ params }: { params?: Promise<{ id: string }> }) => {
   const [studio, setStudio] = useState<Studio | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
@@ -169,17 +169,43 @@ const StudioDetailsPage = ({ params }: { params: { id: string } }) => {
 
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      const foundStudio = studiosData.find(s => s.id === parseInt(params.id));
-      setStudio(foundStudio || null);
-      setLoading(false);
-      
-      // Simulate checking if studio is favorite
-      // In a real app, this would come from an API
-      setIsFavorite(Math.random() > 0.5); // Random favorite status for demo
-    }, 500);
-  }, [params.id]);
+    let isMounted = true;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    const loadStudio = async () => {
+      const resolvedParams = await params;
+      const id = resolvedParams?.id;
+
+      if (!isMounted || !id) {
+        return;
+      }
+
+      // Simulate API call
+      timeoutId = setTimeout(() => {
+        if (!isMounted) {
+          return;
+        }
+
+        const foundStudio = studiosData.find((s) => s.id === parseInt(id, 10));
+        setStudio(foundStudio || null);
+        setLoading(false);
+
+        // Simulate checking if studio is favorite
+        // In a real app, this would come from an API
+        setIsFavorite(Math.random() > 0.5); // Random favorite status for demo
+      }, 500);
+    };
+
+    loadStudio();
+
+    return () => {
+      isMounted = false;
+
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [params]);
 
   if (loading) {
     return (

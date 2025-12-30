@@ -18,7 +18,7 @@ import { specialGothic } from '@/app/fonts';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FaChevronDown, FaTimes } from 'react-icons/fa';
 import { useRef, useEffect } from 'react';
-import { Studio } from '../types';
+import { Studio, Service } from '../types';
 import { getStudioManageProfile, updateStudioProfile } from '../services/api';
 import { useRouter } from 'next/navigation';
 
@@ -54,41 +54,73 @@ const amenityOptions = [
 
 const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
+const emptyStudioProfile: Studio = {
+  studioName: "",
+  description: "",
+  avatarImage: "",
+  galleryImages: [],
+  location: "",
+  contact: {
+    email: "",
+    phone: "",
+    website: "",
+    instagram: "",
+    soundcloud: "",
+    youtube: ""
+  },
+  schedule: {},
+  services: [],
+  additionalInfo: {
+    amenities: [],
+    rules: "",
+    cancellationPolicy: ""
+  },
+  equipment: [],
+  studioTypes: [],
+  languages: [],
+  preferredGenres: []
+};
+
+type ProfileField = 'studioName' | 'location' | 'description';
+type ContactField = keyof Studio['contact'];
+type ScheduleField = 'open' | 'start' | 'end';
+type SimpleListName = 'equipment' | 'studioTypes' | 'languages' | 'preferredGenres';
+type ListName = SimpleListName | 'additionalInfo';
+type StudioService = Service;
+
 export default function ManageStudioProfile() {
   // Initial studio profile data
-  const [studioProfile, setStudioProfile] = useState<Studio>({
-    studioName: "",
-    description: "",
-    avatarImage: "",
-    galleryImages: [],
-    location: "",
-    contact: {
-      email: "",
-      phone: "",
-      website: "",
-      instagram: "",
-      soundcloud: "",
-      youtube: ""
-    },
-    schedule: {},
-    services: [],
-    additionalInfo: {
-      amenities: [],
-      rules: "",
-      cancellationPolicy: ""
-    },
-    equipment: [],
-    studioTypes: [],
-    languages: [],
-    preferredGenres: []
-  });
+  const [studioProfile, setStudioProfile] = useState<Studio>(emptyStudioProfile);
 
   // fetch profile data
   useEffect(() => {
     const fetchProfile = async () => {
       try{
-        const data = await getStudioManageProfile(1)
-        setStudioProfile(data);
+        const data = await getStudioManageProfile(1);
+        const incoming = (data ?? {}) as Partial<Studio>;
+
+        setStudioProfile((prev) => ({
+          ...emptyStudioProfile,
+          ...prev,
+          ...incoming,
+          contact: {
+            ...emptyStudioProfile.contact,
+            ...(prev.contact ?? {}),
+            ...(incoming.contact ?? {})
+          },
+          additionalInfo: {
+            ...emptyStudioProfile.additionalInfo,
+            ...(prev.additionalInfo ?? {}),
+            ...(incoming.additionalInfo ?? {})
+          },
+          services: incoming.services ?? prev.services ?? [],
+          equipment: incoming.equipment ?? prev.equipment ?? [],
+          studioTypes: incoming.studioTypes ?? prev.studioTypes ?? [],
+          languages: incoming.languages ?? prev.languages ?? [],
+          preferredGenres: incoming.preferredGenres ?? prev.preferredGenres ?? [],
+          galleryImages: incoming.galleryImages ?? prev.galleryImages ?? [],
+          schedule: incoming.schedule ?? prev.schedule ?? {}
+        }));
         console.log("profile data is working");
       }catch(error){
         console.log(error);
@@ -97,7 +129,8 @@ export default function ManageStudioProfile() {
     fetchProfile();
   }, [])
 
-  const [newService, setNewService] = useState({
+  const [newService, setNewService] = useState<StudioService>({
+    id: 0,
     name: '',
     description: '',
     price: '',
@@ -121,7 +154,7 @@ export default function ManageStudioProfile() {
   const [showAmenityDropdown, setShowAmenityDropdown] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
   const [showServiceForm, setShowServiceForm] = useState(false);
-  const [editingService, setEditingService] = useState<any>(null);
+  const [editingService, setEditingService] = useState<StudioService | null>(null);
 
   // Define tabs for studio profile management
   const tabs = [
@@ -133,6 +166,15 @@ export default function ManageStudioProfile() {
     { id: 'settings', label: 'Settings', icon: <FaLock className="md:mr-2" /> },
   ];
 
+  type DropdownSelectProps = {
+    options: string[];
+    selectedItems: string[];
+    onAdd: (value: string) => void;
+    onRemove: (value: string) => void;
+    placeholder: string;
+    allowCustom?: boolean;
+  };
+
   // Create a reusable DropdownSelect component
   const DropdownSelect = ({ 
     options, 
@@ -141,16 +183,18 @@ export default function ManageStudioProfile() {
     onRemove, 
     placeholder,
     allowCustom = true
-  }) => {
+  }: DropdownSelectProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [customInput, setCustomInput] = useState('');
-    const dropdownRef = useRef(null);
+    const dropdownRef = useRef<HTMLDivElement | null>(null);
 
     // Close dropdown when clicking outside
     useEffect(() => {
-      const handleClickOutside = (event) => {
-        if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      const handleClickOutside = (event: MouseEvent) => {
+        const target = event.target as Node | null;
+
+        if (dropdownRef.current && target && !dropdownRef.current.contains(target)) {
           setIsOpen(false);
           setSearchTerm('');
         }
@@ -176,7 +220,7 @@ export default function ManageStudioProfile() {
     };
 
     // Handle keyboard events
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === 'Enter' && searchTerm.trim() && !filteredOptions.length) {
         if (allowCustom && !selectedItems.includes(searchTerm.trim())) {
           onAdd(searchTerm.trim());
@@ -216,7 +260,7 @@ export default function ManageStudioProfile() {
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
-                  onRemove(index);
+                  onRemove(item);
                 }}
                 className="text-red-400 hover:text-red-300 ml-2"
               >
@@ -295,14 +339,14 @@ export default function ManageStudioProfile() {
   };
 
   // Handle form field changes
-  const handleProfileChange = (field, value) => {
+  const handleProfileChange = (field: ProfileField, value: string) => {
     setStudioProfile(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
-  const handleContactChange = (field, value) => {
+  const handleContactChange = (field: ContactField, value: string) => {
     setStudioProfile(prev => ({
       ...prev,
       contact: {
@@ -312,7 +356,7 @@ export default function ManageStudioProfile() {
     }));
   };
 
-  const handleScheduleChange = (day, field, value) => {
+  const handleScheduleChange = (day: string, field: ScheduleField, value: string | boolean) => {
     setStudioProfile(prev => ({
       ...prev,
       schedule: {
@@ -350,6 +394,7 @@ export default function ManageStudioProfile() {
     
     // Reset form
     setNewService({
+      id: 0,
       name: '',
       description: '',
       price: '',
@@ -365,9 +410,10 @@ export default function ManageStudioProfile() {
   };
 
   // Edit a service
-  const editService = (service) => {
+  const editService = (service: StudioService) => {
     setEditingService(service);
     setNewService({
+      id: service.id,
       name: service.name,
       description: service.description,
       price: service.price,
@@ -381,7 +427,7 @@ export default function ManageStudioProfile() {
   };
 
   // Delete a service
-  const deleteService = (id) => {
+  const deleteService = (id: number) => {
     setStudioProfile(prev => ({
       ...prev,
       services: prev.services.filter(service => service.id !== id)
@@ -389,48 +435,61 @@ export default function ManageStudioProfile() {
   };
 
   // Add new item to list
-  const addToList = (listName, value) => {
-    if (!value.trim()) return;
-    // Reset input
+  const addToList = (listName: ListName, value: string) => {
+    const trimmedValue = value.trim();
+
+    if (!trimmedValue) return;
+
+    if (listName === 'additionalInfo') {
+      setStudioProfile(prev => ({
+        ...prev,
+        additionalInfo: {
+          ...prev.additionalInfo,
+          amenities: [...prev.additionalInfo.amenities, trimmedValue]
+        }
+      }));
+      setNewAmenity('');
+      return;
+    }
+
+    setStudioProfile(prev => ({
+      ...prev,
+      [listName]: [...(prev[listName] as string[]), trimmedValue]
+    }));
+
     switch (listName) {
-      case 'equipment': setNewEquipment(''); break;
-      case 'studioTypes': setNewStudioType(''); break;
-      case 'languages': setNewLanguage(''); break;
-      case 'preferredGenres': setNewGenre(''); break;
-      case 'additionalInfo': 
-        setStudioProfile(prev => ({
-          ...prev,
-          additionalInfo: {
-            ...prev.additionalInfo,
-            amenities: [...prev.additionalInfo.amenities, value]
-          }
-        }));
-        setNewAmenity('');
+      case 'equipment':
+        setNewEquipment('');
+        break;
+      case 'studioTypes':
+        setNewStudioType('');
+        break;
+      case 'languages':
+        setNewLanguage('');
+        break;
+      case 'preferredGenres':
+        setNewGenre('');
         break;
     }
   };
 
   // Remove item from list
-  const removeFromList = (listName, index) => {
-    setStudioProfile(prev => {
-      const newList = [...prev[listName]];
-      newList.splice(index, 1);
-      
-      if (listName === 'additionalInfo') {
-        return {
-          ...prev,
-          additionalInfo: {
-            ...prev.additionalInfo,
-            amenities: newList
-          }
-        };
-      }
-      
-      return {
+  const removeFromList = (listName: ListName, value: string) => {
+    if (listName === 'additionalInfo') {
+      setStudioProfile(prev => ({
         ...prev,
-        [listName]: newList
-      };
-    });
+        additionalInfo: {
+          ...prev.additionalInfo,
+          amenities: prev.additionalInfo.amenities.filter((amenity) => amenity !== value)
+        }
+      }));
+      return;
+    }
+
+    setStudioProfile(prev => ({
+      ...prev,
+      [listName]: (prev[listName] as string[]).filter((item) => item !== value)
+    }));
   };
 
   // Render content based on active tab
@@ -560,6 +619,7 @@ export default function ManageStudioProfile() {
                     setEditingService(null);
                     setShowServiceForm(true);
                     setNewService({
+                      id: 0,
                       name: '',
                       description: '',
                       price: '',
@@ -757,7 +817,7 @@ export default function ManageStudioProfile() {
                 options={equipmentOptions}
                 selectedItems={studioProfile.equipment}
                 onAdd={(item) => addToList('equipment', item)}
-                onRemove={(index) => removeFromList('equipment', index)}
+                onRemove={(item) => removeFromList('equipment', item)}
                 placeholder="Search or add equipment..."
               />
               
@@ -769,7 +829,7 @@ export default function ManageStudioProfile() {
                 options={studioTypeOptions}
                 selectedItems={studioProfile.studioTypes}
                 onAdd={(item) => addToList('studioTypes', item)}
-                onRemove={(index) => removeFromList('studioTypes', index)}
+                onRemove={(item) => removeFromList('studioTypes', item)}
                 placeholder="Search or add studio types..."
               />
               
@@ -781,7 +841,7 @@ export default function ManageStudioProfile() {
                 options={languageOptions}
                 selectedItems={studioProfile.languages}
                 onAdd={(item) => addToList('languages', item)}
-                onRemove={(index) => removeFromList('languages', index)}
+                onRemove={(item) => removeFromList('languages', item)}
                 placeholder="Search or add languages..."
               />
               
@@ -793,7 +853,7 @@ export default function ManageStudioProfile() {
                 options={genreOptions}
                 selectedItems={studioProfile.preferredGenres}
                 onAdd={(item) => addToList('preferredGenres', item)}
-                onRemove={(index) => removeFromList('preferredGenres', index)}
+                onRemove={(item) => removeFromList('preferredGenres', item)}
                 placeholder="Search or add genres..."
               />
             </div>
@@ -932,7 +992,7 @@ export default function ManageStudioProfile() {
                     options={amenityOptions}
                     selectedItems={studioProfile.additionalInfo.amenities}
                     onAdd={(item) => addToList('additionalInfo', item)}
-                    onRemove={(index) => removeFromList('additionalInfo', index)}
+                    onRemove={(item) => removeFromList('additionalInfo', item)}
                     placeholder="Search or add amenities..."
                   />
                 </div>

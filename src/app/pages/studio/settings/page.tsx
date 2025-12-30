@@ -874,8 +874,14 @@ export default function SettingsPage() {
   );
 }
 
+type NotificationToggleProps = {
+  label: string;
+  checked: boolean;
+  onChange: () => void;
+};
+
 // Helper component for notification toggles
-const NotificationToggle = ({ label, checked, onChange }) => (
+const NotificationToggle = ({ label, checked, onChange }: NotificationToggleProps) => (
   <div className="flex items-center justify-between p-4 bg-gray-800 rounded-lg">
     <span>{label}</span>
     <label className="relative inline-flex items-center cursor-pointer">
@@ -890,8 +896,15 @@ const NotificationToggle = ({ label, checked, onChange }) => (
   </div>
 );
 
+type PrivacyOptionProps = {
+  label: string;
+  description: string;
+  selected: boolean;
+  onChange: () => void;
+};
+
 // Helper component for privacy options
-const PrivacyOption = ({ label, description, selected, onChange }) => (
+const PrivacyOption = ({ label, description, selected, onChange }: PrivacyOptionProps) => (
   <div 
     className={`p-4 rounded-lg cursor-pointer transition-all ${
       selected 

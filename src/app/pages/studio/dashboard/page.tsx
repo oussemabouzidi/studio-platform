@@ -9,24 +9,38 @@ import {addServiceBackend, ApideleteService, getBookings, getEarningData, getSer
 import StudioGamification from '@/app/components/StudioGamification';
 
 
+const emptyStudioData: Studio = {
+  studioName: "",
+  description: "",
+  avatarImage: "",
+  location: "",
+  studioTypes: [],
+  languages: [],
+  preferredGenres: [],
+  galleryImages: [],
+  schedule: {},
+  contact: {
+    email: "",
+    phone: "",
+    website: "",
+    instagram: "",
+    soundcloud: "",
+    youtube: ""
+  },
+  services: [],
+  additionalInfo: {
+    amenities: [],
+    rules: "",
+    cancellationPolicy: ""
+  },
+  equipment: []
+};
+
 const StudioDashboard = () => {
 
   const [showTagSuggestions, setShowTagSuggestions] = useState(false);
   // Sample studio data
-  const [studioData, setStudioData] = useState<Studio>({
-    studioName: "",
-    description: "",
-    avatarImage: "",
-    contact: {
-      email: "",
-      phone: ""
-    },
-    services: [],
-    additionalInfo: {
-      amenities: []
-    },
-    equipment: []
-  });
+  const [studioData, setStudioData] = useState<Studio>(emptyStudioData);
 
   //bookings, service, reviews and earnings data states
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -63,7 +77,30 @@ const StudioDashboard = () => {
     async function fetchStudio(){
       try{
         const data = await getStudioProfile(studio_id);
-        setStudioData(data);
+        const incoming = (data ?? {}) as unknown as Partial<Studio>;
+
+        setStudioData((prev) => ({
+          ...emptyStudioData,
+          ...prev,
+          ...incoming,
+          contact: {
+            ...emptyStudioData.contact,
+            ...(prev.contact ?? {}),
+            ...(incoming.contact ?? {})
+          },
+          additionalInfo: {
+            ...emptyStudioData.additionalInfo,
+            ...(prev.additionalInfo ?? {}),
+            ...(incoming.additionalInfo ?? {})
+          },
+          services: incoming.services ?? prev.services ?? [],
+          equipment: incoming.equipment ?? prev.equipment ?? [],
+          galleryImages: incoming.galleryImages ?? prev.galleryImages ?? [],
+          schedule: incoming.schedule ?? prev.schedule ?? {},
+          studioTypes: incoming.studioTypes ?? prev.studioTypes ?? [],
+          languages: incoming.languages ?? prev.languages ?? [],
+          preferredGenres: incoming.preferredGenres ?? prev.preferredGenres ?? []
+        }));
       }catch(error){
         console.log(error);
       }

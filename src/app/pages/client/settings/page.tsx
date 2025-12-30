@@ -25,45 +25,75 @@ import { SettingsData } from '../../studio/types';
 import { getSettings, updateSettings } from '../service/api';
 import { useRouter } from 'next/navigation';
 
+type PaymentMethod = {
+  id: number;
+  type: string;
+  last4: string;
+  expiry: string;
+  primary: boolean;
+};
+
+type Invoice = {
+  id: number;
+  date: string;
+  studio: string;
+  amount: number;
+  fee: number;
+};
+
+type ExtendedSettingsData = SettingsData & {
+  paymentMethods: PaymentMethod[];
+  invoices: Invoice[];
+};
+
+const defaultSettings: ExtendedSettingsData = {
+  paymentMethods: [
+    { id: 1, type: 'Visa', last4: '4242', expiry: '12/25', primary: true },
+    { id: 2, type: 'MasterCard', last4: '1881', expiry: '08/24', primary: false }
+  ],
+  invoices: [
+    { id: 1, date: '2025-07-15', studio: 'Echo Sound Studios', amount: 250.0, fee: 7.5 },
+    { id: 2, date: '2025-06-22', studio: 'Harmony Records', amount: 180.0, fee: 5.4 },
+    { id: 3, date: '2025-05-10', studio: 'Urban Beats Lab', amount: 320.0, fee: 9.6 }
+  ],
+  payoutMethods: [
+    { id: 1, type: 'Bank Transfer', primary: true }
+  ],
+  payoutHistory: [],
+  connectedAccounts: [
+    { id: 1, provider: 'Google', connected: true },
+    { id: 2, provider: 'Facebook', connected: false }
+  ],
+  notifications: {
+    bookingConfirmation: { email: true, sms: false, push: true },
+    bookingReminder: { email: true, sms: false, push: true },
+    bookingAttendance: { email: true, sms: false, push: true },
+    artistReview: { email: true, sms: false, push: true },
+    platformNews: { email: false, sms: false, push: false },
+    payoutUpdates: { email: true, sms: false, push: true }
+  },
+  privacySettings: {
+    profileVisibility: 'public',
+    showReviews: true,
+    analyticsTracking: true
+  },
+  securitySettings: {
+    twoFactorAuth: false
+  },
+  regionalSettings: {
+    language: 'en',
+    timezone: 'America/New_York',
+    currency: 'USD',
+    timeFormat: '12h'
+  }
+};
+
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('billing');
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   
-  const [settingsData, setSettingsData] = useState<SettingsData>({
-    paymentMethods: [
-      { id: 1, type: 'Visa', last4: '4242', expiry: '12/25', primary: true },
-      { id: 2, type: 'MasterCard', last4: '1881', expiry: '08/24', primary: false }
-    ],
-    invoices: [
-      { id: 1, date: '2025-07-15', studio: 'Echo Sound Studios', amount: 250.00, fee: 7.50 },
-      { id: 2, date: '2025-06-22', studio: 'Harmony Records', amount: 180.00, fee: 5.40 },
-      { id: 3, date: '2025-05-10', studio: 'Urban Beats Lab', amount: 320.00, fee: 9.60 }
-    ],
-    connectedAccounts: [
-      { id: 1, provider: 'Google', connected: true },
-      { id: 2, provider: 'Facebook', connected: false }
-    ],
-    notifications: {
-      bookingConfirmation: { email: true, sms: false, push: true },
-      bookingReminder: { email: true, sms: false, push: true },
-      platformNews: { email: false, sms: false, push: false }
-    },
-    privacySettings: {
-      profileVisibility: 'public',
-      showReviews: true,
-      analyticsTracking: true
-    },
-    securitySettings: {
-      twoFactorAuth: false
-    },
-    regionalSettings: {
-      language: 'en',
-      timezone: 'America/New_York',
-      currency: 'USD',
-      timeFormat: '12h'
-    }
-  });
+  const [settingsData, setSettingsData] = useState<ExtendedSettingsData>(defaultSettings);
 
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -72,7 +102,24 @@ export default function SettingsPage() {
       try {
         const id = localStorage.getItem("user_id");
         const data = await getSettings(id);
-        setSettingsData(data);
+        const incoming = (data ?? {}) as Partial<ExtendedSettingsData>;
+
+        setSettingsData((prev) => ({
+          ...prev,
+          ...incoming,
+          paymentMethods: incoming.paymentMethods ?? prev.paymentMethods,
+          invoices: incoming.invoices ?? prev.invoices,
+          payoutMethods: incoming.payoutMethods ?? prev.payoutMethods,
+          payoutHistory: incoming.payoutHistory ?? prev.payoutHistory,
+          connectedAccounts: incoming.connectedAccounts ?? prev.connectedAccounts,
+          notifications: {
+            ...prev.notifications,
+            ...(incoming.notifications ?? {})
+          },
+          privacySettings: { ...prev.privacySettings, ...(incoming.privacySettings ?? {}) },
+          securitySettings: { ...prev.securitySettings, ...(incoming.securitySettings ?? {}) },
+          regionalSettings: { ...prev.regionalSettings, ...(incoming.regionalSettings ?? {}) }
+        }));
         console.log(data);
         console.log("settings data is working");
       } catch (err) {
@@ -785,8 +832,14 @@ export default function SettingsPage() {
   );
 }
 
+type NotificationToggleProps = {
+  label: string;
+  checked: boolean;
+  onChange: () => void;
+};
+
 // Helper component for notification toggles
-const NotificationToggle = ({ label, checked, onChange }) => (
+const NotificationToggle = ({ label, checked, onChange }: NotificationToggleProps) => (
   <div className="flex items-center justify-between p-3 sm:p-4 bg-gray-800 rounded-lg">
     <span className="text-sm sm:text-base">{label}</span>
     <label className="relative inline-flex items-center cursor-pointer">
@@ -801,8 +854,16 @@ const NotificationToggle = ({ label, checked, onChange }) => (
   </div>
 );
 
+type PrivacyOptionProps = {
+  value: string;
+  label: string;
+  description: string;
+  selected: boolean;
+  onChange: () => void;
+};
+
 // Helper component for privacy options
-const PrivacyOption = ({ label, description, selected, onChange }) => (
+const PrivacyOption = ({ value, label, description, selected, onChange }: PrivacyOptionProps) => (
   <div 
     className={`p-3 sm:p-4 rounded-lg cursor-pointer transition-all ${
       selected 

@@ -29,7 +29,7 @@ type GamificationData = {
 type DeviceUsageData = {
   device: string;
   count: number;
-  percentage: string;
+  percentage: number;
 };
 
 type CountryData = {
@@ -73,6 +73,18 @@ interface TopStudio {
   name: string;
   bookings: number;
   revenue: number;
+}
+
+interface RevenueHistoryMonth {
+  month: string;
+  revenue: number;
+  expected: number;
+}
+
+interface RevenueHistoryYear {
+  year: string;
+  revenue: number;
+  expected: number;
 }
 
 const AdminDashboard = () => {
@@ -181,17 +193,25 @@ const AdminDashboard = () => {
   }, []);
 
   // Process revenue history from API data
-  const revenueHistory = {
-    monthly: stats?.revenueStats?.monthly?.map((item: any) => ({
-      month: item.month,
-      revenue: item.revenue,
-      expected: item.revenue * 1.08 // 8% expected growth
-    })) || [],
-    yearly: stats?.revenueStats?.yearly?.map((item: any) => ({
-      year: item.year,
-      revenue: item.revenue,
-      expected: item.revenue * 1.12 // 12% expected growth
-    })) || []
+  const revenueHistory: { monthly: RevenueHistoryMonth[]; yearly: RevenueHistoryYear[] } = {
+    monthly: (stats?.revenueStats?.monthly?.map((item: any) => {
+      const revenue = Number(item?.revenue ?? 0);
+
+      return {
+        month: item?.month ?? "",
+        revenue,
+        expected: revenue * 1.08 // 8% expected growth
+      };
+    }) ?? []),
+    yearly: (stats?.revenueStats?.yearly?.map((item: any) => {
+      const revenue = Number(item?.revenue ?? 0);
+
+      return {
+        year: item?.year ?? "",
+        revenue,
+        expected: revenue * 1.12 // 12% expected growth
+      };
+    }) ?? [])
   };
 
   // Navigation tabs
@@ -250,10 +270,18 @@ const AdminDashboard = () => {
   }
 
   // Process device usage data
-  const processedDeviceUsage = stats?.deviceUsage || [];
+  const processedDeviceUsage: DeviceUsageData[] = (stats?.deviceUsage ?? []).map((item: any) => ({
+    device: item?.device ?? "",
+    count: Number(item?.count ?? 0),
+    percentage: Number(item?.percentage ?? 0)
+  }));
 
   // Process geographic distribution data
-  const processedGeoDistribution = stats?.artistCountries || [];
+  const processedGeoDistribution: CountryData[] = (stats?.artistCountries ?? []).map((item: any) => ({
+    country: item?.country ?? "",
+    users: Number(item?.users ?? 0),
+    percentage: String(item?.percentage ?? "0")
+  }));
 
   // Calculate gamification stats from API data
 // Replace the problematic gamificationStats calculation with this:

@@ -462,7 +462,7 @@ export default function CreateArtistAccountPage() {
                       value={formData.bio}
                       onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                       className="w-full px-4 py-2.5 bg-gray-700/40 border border-gray-600/50 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent outline-none transition-all duration-200 text-sm text-white font-special-regular"
-                      rows="3"
+                      rows={3}
                       placeholder="Tell us about yourself and your music..."
                       required
                     ></textarea>
@@ -860,7 +860,7 @@ export default function CreateArtistAccountPage() {
                       value={formData.availability}
                       onChange={(e) => setFormData(prev => ({ ...prev, availability: e.target.value }))}
                       className="w-full px-4 py-2.5 bg-gray-700/40 border border-gray-600/50 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent outline-none transition-all duration-200 text-sm text-white font-special-regular"
-                      rows="3"
+                      rows={3}
                       placeholder="Describe your typical availability..."
                     ></textarea>
                   </div>

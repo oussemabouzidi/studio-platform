@@ -57,7 +57,23 @@ export default function ManageProfilePage() {
     async function fetchProfile() {
       try {
         const data = await getProfile(1);
-        setFormData(data);
+        const profileData = (data ?? {}) as Partial<Profile>;
+
+        setFormData((prev) => ({
+          ...prev,
+          ...profileData,
+          contact: {
+            ...prev.contact,
+            ...(profileData.contact ?? {}),
+            spotify: profileData.contact?.spotify ?? prev.contact.spotify
+          },
+          genres: profileData.genres ?? [],
+          instruments: profileData.instruments ?? [],
+          languages: profileData.languages ?? [],
+          collaborators: profileData.collaborators ?? [],
+          portfolio: profileData.portfolio ?? [],
+          demo: profileData.demo ?? []
+        }));
         console.log("profile data is working");
       } catch (err) {
         console.error(err);
