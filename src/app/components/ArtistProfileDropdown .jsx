@@ -7,7 +7,12 @@ const ArtistProfileDropdown = ({ artistProfile }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const signout = () => {
-    console.log("signout")
+    localStorage.removeItem("user_id");
+    localStorage.removeItem("role");
+    localStorage.removeItem("studio_id");
+    localStorage.removeItem("artist_id");
+
+    window.location.assign("/pages/auth/login");
   }
 
   return (

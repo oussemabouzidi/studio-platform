@@ -1,16 +1,43 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+const API_BASE_URL = "/api/proxy";
 const api_base_url = `${API_BASE_URL}/auth`;
+
+async function readJsonSafe(res) {
+  try {
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
 
 
 export async function login(email, password) {
-    const res = await fetch(`${api_base_url}/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password })
+  let res;
+  try {
+    res = await fetch(`${api_base_url}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
     });
+  } catch (error) {
+    throw new Error(
+      "Network error while logging in. Make sure the backend API is running and reachable.",
+    );
+  }
 
-    const data = await res.json();
-    return data;
+  let data = null;
+  try {
+    data = await res.json();
+  } catch {
+    // ignore (non-JSON error response)
+  }
+
+  if (!res.ok) {
+    const message =
+      (data && (data.error || data.message)) || "Login failed. Please try again.";
+    throw new Error(message);
+  }
+
+  return data;
 
 }
 
@@ -24,8 +51,8 @@ export const createAccount = async (firstName, lastName, email, password) => {
     });
 
     if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || "Failed to create account");
+      const err = await readJsonSafe(res);
+      throw new Error((err && err.error) || "Failed to create account");
     }
 
     return await res.json(); // { message, userId }
@@ -52,16 +79,27 @@ export const createAccountArtist = async (userId, formData) => {
       })
     });
     
-    const result = await response.json();
+    const result = await readJsonSafe(response);
     
-    if (result.success) {
+    if (!response.ok) {
+      const message =
+        (result && (result.error || result.message)) ||
+        `Failed to create artist (HTTP ${response.status})`;
+      throw new Error(message);
+    }
+
+    if (result && result.success) {
       console.log('Artist created with ID:', result.artistId);
       //Router.push("/pages/client/studios");
+      return result;
     } else {
-      console.error('Failed to create artist:', result.error);
+      const message =
+        (result && (result.error || result.message)) || "Failed to create artist";
+      throw new Error(message);
     }
   } catch (error) {
     console.error('Error submitting form:', error);
+    throw error;
   }
 };
 
@@ -79,15 +117,26 @@ export const createAccountStudio = async (userId, formData) => {
       })
     });
     
-    const result = await response.json();
+    const result = await readJsonSafe(response);
     
-    if (result.success) {
+    if (!response.ok) {
+      const message =
+        (result && (result.error || result.message)) ||
+        `Failed to create studio (HTTP ${response.status})`;
+      throw new Error(message);
+    }
+
+    if (result && result.success) {
       console.log('Studio created zlfkjsdmlfj with ID:', result.studioId);
       // Redirect or show success message
+      return result;
     } else {
-      console.error('Failed to create studio:', result.error);
+      const message =
+        (result && (result.error || result.message)) || "Failed to create studio";
+      throw new Error(message);
     }
   } catch (error) {
     console.error('Error submitting form:', error);
+    throw error;
   }
 };

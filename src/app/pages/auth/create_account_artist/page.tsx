@@ -294,9 +294,29 @@ export default function CreateArtistAccountPage() {
   const handleSubmit = async () => {
     const id = localStorage.getItem("user_id");
     console.log(id)
-    const res = await createAccountArtist(id, formData);
-    console.log(res);
-    Router.push("/pages/client/studios")
+    if (!id) {
+      alert("Missing user id. Please log in again, then retry.");
+      return;
+    }
+
+    const userId = /^\d+$/.test(id) ? Number(id) : id;
+    const payload: FormData = { ...formData };
+    const hadDataUrl =
+      typeof payload.avatarImage === "string" && payload.avatarImage.startsWith("data:");
+    if (hadDataUrl) payload.avatarImage = null;
+
+    try {
+      await createAccountArtist(userId, payload);
+      if (hadDataUrl) {
+        alert(
+          "Artist created, but the avatar image was not uploaded yet. Please add an image URL or update your profile later.",
+        );
+      }
+      Router.push("/pages/client/studios");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to create artist.";
+      alert(message);
+    }
   };
 
   const nextStep = () => {

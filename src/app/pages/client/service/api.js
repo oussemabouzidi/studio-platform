@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+const API_BASE_URL = "/api/proxy";
 const api_base_url = `${API_BASE_URL}/artist`;
 
 
@@ -39,14 +39,21 @@ export async function getBookingsByArtist(artistId) {
     throw new Error("Failed to fetch bookings");
   }
 
-  const backendBookings = await res.json();
+  const raw = await res.json();
+  const backendBookings = Array.isArray(raw)
+    ? raw
+    : Array.isArray(raw?.bookings)
+      ? raw.bookings
+      : Array.isArray(raw?.data)
+        ? raw.data
+        : [];
 
   const bookingsUI = backendBookings.map((b) => ({
     bookingId: b.booking_id,
     bookingDate: b.booking_date,
     bookingTime: b.booking_time,
     nbrGuests: b.nbr_guests,
-    status: true,
+    status: b.status ?? true,
     studio: {
       id: b.studio_id,
       name: b.studio_name,

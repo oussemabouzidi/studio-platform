@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react';
+import { Fragment } from 'react';
 import { Menu, Transition } from '@headlessui/react';
 import Link from 'next/link';
 
@@ -12,11 +12,13 @@ type StudioProfileDropdownProps = {
 };
 
 const StudioProfileDropdown = ({ studioProfile }: StudioProfileDropdownProps) => {
-  const [isOpen, setIsOpen] = useState(false);
-
   const signout = () => {
-    console.log("Studio signed out");
-    // Actual signout implementation would go here
+    localStorage.removeItem("user_id");
+    localStorage.removeItem("role");
+    localStorage.removeItem("studio_id");
+    localStorage.removeItem("artist_id");
+
+    window.location.assign("/pages/auth/login");
   };
 
   return (

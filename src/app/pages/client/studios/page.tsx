@@ -98,7 +98,10 @@ const StudiosPage = () => {
   useEffect(() => {
     async function fetchBookings() {
       try {
-        const id = localStorage.getItem("user_id");
+        const id =
+          localStorage.getItem("user_id") ?? localStorage.getItem("artist_id");
+        if (!id) return;
+
         const data = await getBookingsByArtist(id);
         setBookings(data);
         console.log("booking data is working");

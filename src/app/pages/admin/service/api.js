@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+const API_BASE_URL = "/api/proxy";
 const api_base_url = `${API_BASE_URL}/admin`;
 
 
@@ -50,12 +50,12 @@ export async function getArtists(){
 }
 
 export async function apiUpdateArtistStatus(id, status) {
-  const res = await fetch(`${api_base_url}/artist/${id}/status`, {   // ✅ fixed
+  const res = await fetch(`${api_base_url}/artist/${id}/status`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ status }),   // ✅ correct body
+    body: JSON.stringify({ status }),
   });
 
   if (!res.ok) throw new Error("Failed to update artist status");
@@ -97,8 +97,7 @@ export async function apiupdateStudioStatus(id, status) {
 
 
 export async function getStats() {
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-  const res = await fetch(`${API_BASE_URL}/stats/show`);
+  const res = await fetch(`/api/proxy/stats/show`);
 
   if (!res.ok) {
     throw new Error("Failed to fetch stats");

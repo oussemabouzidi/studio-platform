@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+const API_BASE_URL = "/api/proxy";
 const api_base_url = `${API_BASE_URL}/studio`;
 
 
@@ -30,15 +30,21 @@ export async function getServices(id){
     const res = await fetch(`${api_base_url}/${id}/services`);
     if(!res.ok){throw new Error('failed to fetch services')}
 
-    const servicesbackend = await res.json();
+    const raw = await res.json();
+
+    const servicesbackend = Array.isArray(raw)
+      ? raw
+      : Array.isArray(raw?.services)
+        ? raw.services
+        : Array.isArray(raw?.data)
+          ? raw.data
+          : [];
 
     function tagsToString(tags){
-        let str_tag = '';
-        for(let i = 0 ; i< tags.length ; i++){
-            str_tag += tags[i];
-            str_tag += ',';
-        }
-        return str_tag;
+        if (!tags) return "";
+        if (typeof tags === "string") return tags;
+        if (Array.isArray(tags)) return tags.filter(Boolean).join(",");
+        return String(tags);
     }
 
     const serviceUi = servicesbackend.map((s) => ({
@@ -46,10 +52,10 @@ export async function getServices(id){
         name: s.name,
         description: s.description,
         price: s.price,
-        priceType: s.price_type,
+        priceType: s.price_type ?? s.priceType,
         duration: s.duration,
-        maxCapacity: s.max_capacity,
-        availableTimes: s.available_timing,
+        maxCapacity: s.max_capacity ?? s.maxCapacity,
+        availableTimes: s.available_timing ?? s.available_times ?? s.availableTimes,
         tags: tagsToString(s.tags)
     }))
 
@@ -124,8 +130,7 @@ export async function getEarningData(id){
 
 
 export async function getProfile(id) {
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-  const res = await fetch(`${API_BASE_URL}/artist/${id}/profile`);
+  const res = await fetch(`/api/proxy/artist/${id}/profile`);
   if (!res.ok) {
     throw new Error("Failed to fetch profile");
   }

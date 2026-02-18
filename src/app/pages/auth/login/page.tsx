@@ -9,24 +9,36 @@ import {login} from '../service/api'
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
 
 
   const handleSignIn = async () => {
-    const res = await login(email, password);
-    console.log(res);
+    setError(null);
+    try {
+      // Avoid stale auth values when switching accounts.
+      localStorage.removeItem("user_id");
+      localStorage.removeItem("role");
+      localStorage.removeItem("studio_id");
+      localStorage.removeItem("artist_id");
 
-    if (res.success) {
+      const res = await login(email, password);
+      console.log(res);
+
+      if (!res?.success) {
+        setError(res?.error || "Invalid credentials.");
+        return;
+      }
+
       // Save in localStorage
       localStorage.setItem("user_id", res.user_id);
       localStorage.setItem("role", res.role);
-      if (res.studio_id) {
-        localStorage.setItem("studio_id", res.studio_id);
-      }
-      if (res.artist_id) {
-        localStorage.setItem("artist_id", res.artist_id);
-      }
+      if (res.studio_id) localStorage.setItem("studio_id", res.studio_id);
+      else localStorage.removeItem("studio_id");
+
+      if (res.artist_id) localStorage.setItem("artist_id", res.artist_id);
+      else localStorage.removeItem("artist_id");
 
       // Redirect
       if (res.role === "artist") {
@@ -34,6 +46,8 @@ export default function LoginPage() {
       } else {
         router.push("/pages/studio/dashboard");
       }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Login failed.");
     }
   };
 
@@ -72,7 +86,8 @@ export default function LoginPage() {
             <button 
             className="flex items-center justify-center gap-2 w-full py-2.5 bg-transparent border border-white/20 text-white rounded-lg transition-all duration-300 hover:bg-white/10 hover:border-white/40 text-sm font-special-regular"
             onClick={async () => await signIn('google', { 
-              callbackUrl: `${window.location.origin}`
+              callbackUrl: `${window.location.origin}`,
+              prompt: "select_account",
             })}>
               <FaGoogle className="text-blue-300 text-lg" />
               <span>Google</span>
@@ -94,6 +109,11 @@ export default function LoginPage() {
 
           {/* Compact Login Form */}
           <div className="space-y-4">
+            {error ? (
+              <div className="rounded-lg border border-red-500/30 bg-red-900/20 px-4 py-3 text-sm text-red-200">
+                {error}
+              </div>
+            ) : null}
             {/* Email Input */}
             <div>
               <label className="block text-blue-200 mb-1 text-xs md:text-sm font-special-regular">Email Address</label>

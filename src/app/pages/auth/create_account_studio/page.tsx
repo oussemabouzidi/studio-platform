@@ -88,9 +88,6 @@ export default function CreateStudioAccountPage() {
     preferredGenres: [],
   });
 
-  const Router = useRouter();
-  
-  
   const [newService, setNewService] = useState({
     name: '',
     description: '',
@@ -278,10 +275,40 @@ export default function CreateStudioAccountPage() {
 
   // Handle form submission
   const handleSubmit = async () => {
-    //console.log('Studio Account Created:', formData);
-      const res = await createAccountStudio(10, formData);
-      console.log(res);
-    
+    const storedUserId = localStorage.getItem("user_id");
+    if (!storedUserId) {
+      alert("Missing user id. Please log in again, then retry.");
+      return;
+    }
+
+    const userId = /^\d+$/.test(storedUserId) ? Number(storedUserId) : storedUserId;
+
+    const payload: FormData = { ...formData };
+    const hadDataUrls =
+      (typeof payload.avatarImage === "string" && payload.avatarImage.startsWith("data:")) ||
+      payload.galleryImages.some(
+        (img) => typeof img === "string" && img.startsWith("data:"),
+      );
+
+    if (typeof payload.avatarImage === "string" && payload.avatarImage.startsWith("data:")) {
+      payload.avatarImage = null;
+    }
+    payload.galleryImages = payload.galleryImages.filter(
+      (img) => !(typeof img === "string" && img.startsWith("data:")),
+    );
+
+    try {
+      await createAccountStudio(userId, payload);
+      if (hadDataUrls) {
+        alert(
+          "Studio created, but images were not uploaded yet. Please add image URLs or update your profile later.",
+        );
+      }
+      router.push("/pages/studio/dashboard");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to create studio.";
+      alert(message);
+    }
   };
 
   // Navigation functions

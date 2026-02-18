@@ -145,15 +145,29 @@ const BookingDialog = ({ studio, services, onClose }: {
   const [guests, setGuests] = useState(1);
   const [bookingStep, setBookingStep] = useState(1);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [showCalendar, setShowCalendar] = useState(false);
   const calendarRef = useRef<HTMLDivElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();  
+      setSubmitError(null);
+
+      const userIdRaw =
+        typeof window !== "undefined"
+          ? (localStorage.getItem("user_id") ?? localStorage.getItem("artist_id"))
+          : null;
+      const userId = userIdRaw ? Number(userIdRaw) : NaN;
+
+      if (!Number.isFinite(userId)) {
+        setSubmitError("Missing user session. Please log in again.");
+        return;
+      }
+
       console.log(selectedService);    
       // Create booking object with the requested attributes
       const booking = {
-        user_id: 1, // You would replace this with actual user ID
+        user_id: userId,
         studio_id: studio.id,
         booking_date: date ? date.toISOString().split('T')[0] : null,
         booking_time: time,
@@ -233,6 +247,11 @@ const BookingDialog = ({ studio, services, onClose }: {
             </div>
           ) : (
             <form onSubmit={handleSubmit}>
+              {submitError ? (
+                <div className="mb-4 rounded-lg border border-red-500/30 bg-red-900/20 px-4 py-3 text-sm text-red-200">
+                  {submitError}
+                </div>
+              ) : null}
               {bookingStep === 1 && (
                 <div className="space-y-4">
                   <div>
