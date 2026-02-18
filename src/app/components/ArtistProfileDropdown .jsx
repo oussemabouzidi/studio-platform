@@ -1,16 +1,21 @@
+'use client';
 import { Fragment, useState } from 'react';
 import { Menu, Transition } from '@headlessui/react';
 import Link from 'next/link';
+import { logout } from '@/app/pages/auth/service/api';
 // import { signOut } from 'next-auth/react';
 
 const ArtistProfileDropdown = ({ artistProfile }) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  const signout = () => {
+  const signout = async () => {
+    logout().catch(() => null);
+
     localStorage.removeItem("user_id");
     localStorage.removeItem("role");
     localStorage.removeItem("studio_id");
     localStorage.removeItem("artist_id");
+    localStorage.removeItem("isVerified");
 
     window.location.assign("/pages/auth/login");
   }
@@ -114,6 +119,7 @@ const ArtistProfileDropdown = ({ artistProfile }) => {
             {({ active }) => (
               <button
                 onClick={() => signout()}
+                type="button"
                 className={`${
                   active ? 'bg-gray-700 font-special-regular' : ''
                 } block w-full text-left px-4 py-2 text-sm text-red-500  font-special-regular`}

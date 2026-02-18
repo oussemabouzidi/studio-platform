@@ -41,6 +41,34 @@ export async function login(email, password) {
 
 }
 
+export async function logout() {
+  // Best-effort: clear the backend session cookie (if the backend supports it).
+  // The UI should still clear localStorage + redirect even if this fails.
+  try {
+    const res = await fetch(`${api_base_url}/logout`, {
+      method: "POST",
+      credentials: "include",
+      keepalive: true,
+    });
+
+    if (res.ok) return true;
+  } catch {
+    // ignore
+  }
+
+  try {
+    const res = await fetch(`${api_base_url}/logout`, {
+      method: "GET",
+      credentials: "include",
+      keepalive: true,
+    });
+
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export const createAccount = async (firstName, lastName, email, password) => {
   try {
     console.log(JSON.stringify({ firstName, lastName, email, password }))

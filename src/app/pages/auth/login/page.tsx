@@ -22,6 +22,7 @@ export default function LoginPage() {
       localStorage.removeItem("role");
       localStorage.removeItem("studio_id");
       localStorage.removeItem("artist_id");
+      localStorage.removeItem("isVerified");
 
       const res = await login(email, password);
       console.log(res);
