@@ -547,7 +547,7 @@ const StudiosPage = () => {
           <div className="max-w-7xl mx-auto px-2 sm:px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="w-full md:w-[15%] flex justify-start">
               <img 
-                src="/home/logo.png" 
+                src="/home/Logo.png" 
                 className="h-12 w-16 md:h-15 md:w-20 hover:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] rounded-sm" 
                 alt="Logo"  
               />

@@ -27,7 +27,7 @@ export default function VerifyPage() {
           <div className="w-32 h-32 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center p-2 shadow-[0_0_30px_rgba(147,51,234,0.8)]">
             <div className="w-full h-full bg-gray-900 rounded-full flex items-center justify-center">
               <img 
-                src="/home/logo.png" 
+                src="/home/Logo.png" 
                 alt="Audio Alchemic Logo" 
                 className="w-20 h-20"
               />

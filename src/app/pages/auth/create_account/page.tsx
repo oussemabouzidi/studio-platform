@@ -97,7 +97,7 @@ export default function CreateAccountPage() {
         <nav className="w-full h-20 py-4">
           <div className="mr-8 ml-8 px-4 flex justify-between items-center">
             <div className="flex items-center">
-              <img src="/home/logo.png" alt="Logo" className="h-12" />
+              <img src="/home/Logo.png" alt="Logo" className="h-12" />
             </div>
           </div>
         </nav>

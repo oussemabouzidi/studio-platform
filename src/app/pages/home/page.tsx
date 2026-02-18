@@ -104,7 +104,7 @@ export default function HomePage() {
       <nav className={`fixed w-full h-20 z-50 transition-all duration-300  ${isScrolled ? 'bg-gray-900/90 backdrop-blur-2xl bg-opacity-50 py-2' : 'bg-transparent  py-4'}`}>
         <div className=" mr-8 ml-8 px-4  flex justify-between items-center">
           <div className="flex items-center h-20 w-20">
-              <img src="/home/logo.png" />
+              <img src="/home/Logo.png" />
 
     </div>
           {/* Desktop Menu */}
@@ -434,7 +434,7 @@ export default function HomePage() {
               <div className="flex items-center mb-6">
                 <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-blue-500 rounded-lg flex items-center justify-center mr-3">
                   
-                  <img src="/home/logo.png"  />
+                  <img src="/home/Logo.png"  />
                 </div>
                 <span className={`text-2xl font-bold font-special `}>Audio Alchemic</span>
               </div>

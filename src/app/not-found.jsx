@@ -18,7 +18,7 @@ export default function NotFound() {
       <nav className="fixed w-full h-20 z-50  bg-opacity-50 py-2">
         <div className="mr-8 ml-8 px-4 flex justify-between items-center">
           <div className="flex items-center h-20 w-20">
-            <img src="/home/logo.png" alt="Audio Alchemic Logo" className="h-12" />
+            <img src="/home/Logo.png" alt="Audio Alchemic Logo" className="h-12" />
           </div>
           
           

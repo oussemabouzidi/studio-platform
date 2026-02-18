@@ -354,7 +354,7 @@ export default function CreateArtistAccountPage() {
         <nav className="w-full h-20 mt-4 py-4">
           <div className="mr-8 ml-8 mt-12 pt-4 px-4 flex justify-between items-center">
             <div className="flex items-center">
-              <img src="/home/logo.png" alt="Logo" className="h-12" />
+              <img src="/home/Logo.png" alt="Logo" className="h-12" />
             </div>
           </div>
         </nav>

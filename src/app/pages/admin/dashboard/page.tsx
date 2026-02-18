@@ -1120,7 +1120,7 @@ const apiGamificationStats = stats?.gamification
           {/* Logo */}
           <div className="flex justify-start">
             <img 
-              src="/home/logo.png" 
+              src="/home/Logo.png" 
               className='w-14 h-10 md:h-15 md:w-20 hover:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] rounded-sm' 
               alt="Logo"  
             />
