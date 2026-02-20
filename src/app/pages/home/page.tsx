@@ -18,12 +18,27 @@ export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const router = useRouter() ;
 
+  const scrollToSection = (id: string) => {
+    setIsMenuOpen(false);
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const hash = window.location.hash.replace("#", "");
+    if (!hash) return;
+    // Let the page paint before scrolling (especially when coming from another route).
+    window.setTimeout(() => scrollToSection(hash), 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const studios = [
@@ -109,9 +124,36 @@ export default function HomePage() {
     </div>
           {/* Desktop Menu */}
           <div className="hidden md:flex space-x-8">
-            <a href="#" className={`hover:text-purple-400 transition-colors font-special `}>Studios</a>
-            <a href="#" className={`hover:text-purple-400 transition-colors font-special `}>How It Works ?</a>
-            <a href="#" className={`hover:text-purple-400 transition-colors font-special `}>Contact</a>
+            <a
+              href="#studios"
+              onClick={(e) => {
+                e.preventDefault();
+                scrollToSection("studios");
+              }}
+              className={`hover:text-purple-400 transition-colors font-special `}
+            >
+              Studios
+            </a>
+            <a
+              href="#how-it-works"
+              onClick={(e) => {
+                e.preventDefault();
+                scrollToSection("how-it-works");
+              }}
+              className={`hover:text-purple-400 transition-colors font-special `}
+            >
+              How It Works ?
+            </a>
+            <a
+              href="#contact"
+              onClick={(e) => {
+                e.preventDefault();
+                scrollToSection("contact");
+              }}
+              className={`hover:text-purple-400 transition-colors font-special `}
+            >
+              Contact
+            </a>
           </div>
           
           <div className="flex items-center">
@@ -133,10 +175,40 @@ export default function HomePage() {
         {isMenuOpen && (
           <div className="md:hidden bg-gray-800 py-4 px-4">
             <div className="flex flex-col space-y-4">
-              <a href="#" className={`hover:text-purple-400 transition-colors font-special hover:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] `}>Studios</a>
-              <a href="#" className={`hover:text-purple-400 transition-colors hover:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)]`}>How It Works ?</a>
-              <a href="#" className={`hover:text-purple-400 transition-colors hover:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)]`}>Contact</a>
-              <button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-2 rounded-full font-medium transition-all duration-300 mr-8">
+              <a
+                href="#studios"
+                onClick={(e) => {
+                  e.preventDefault();
+                  scrollToSection("studios");
+                }}
+                className={`hover:text-purple-400 transition-colors font-special hover:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] `}
+              >
+                Studios
+              </a>
+              <a
+                href="#how-it-works"
+                onClick={(e) => {
+                  e.preventDefault();
+                  scrollToSection("how-it-works");
+                }}
+                className={`hover:text-purple-400 transition-colors hover:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)]`}
+              >
+                How It Works ?
+              </a>
+              <a
+                href="#contact"
+                onClick={(e) => {
+                  e.preventDefault();
+                  scrollToSection("contact");
+                }}
+                className={`hover:text-purple-400 transition-colors hover:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)]`}
+              >
+                Contact
+              </a>
+              <button
+                onClick={GoToLogin}
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-2 rounded-full font-medium transition-all duration-300 mr-8"
+              >
                 Sign In
               </button>
             </div>
@@ -170,7 +242,10 @@ export default function HomePage() {
       </section>
 
       {/* How It Works Section */}
-      <section className="relative z-10 py-20 bg-gradient-to-b from-gray-900 to-gray-800">
+      <section
+        id="how-it-works"
+        className="relative z-10 py-20 bg-gradient-to-b from-gray-900 to-gray-800 scroll-mt-24"
+      >
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className={`text-4xl font-bold mb-4 font-special `}>How It Works ?</h2>
@@ -332,7 +407,10 @@ export default function HomePage() {
 </section>
 
       {/* Featured Studios */}
-      <section className="relative z-10 py-20 bg-gradient-to-b from-gray-900 to-gray-800">
+      <section
+        id="studios"
+        className="relative z-10 py-20 bg-gradient-to-b from-gray-900 to-gray-800 scroll-mt-24"
+      >
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className={`text-4xl font-bold mb-4 font-special `}>Featured Studios</h2>
@@ -427,7 +505,10 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="relative z-10 bg-gray-900 border-t border-gray-800 pt-16 pb-8">
+      <footer
+        id="contact"
+        className="relative z-10 bg-gray-900 border-t border-gray-800 pt-16 pb-8 scroll-mt-24"
+      >
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
             <div>
