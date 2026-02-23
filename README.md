@@ -16,6 +16,24 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Test on a real phone (same Wi-Fi)
+
+If you open the site on your phone, **don't use** `http://localhost:3000` (on a phone, `localhost` is the phone).
+
+1) Start the dev server so it's reachable on your network:
+
+```bash
+npm run dev:lan
+```
+
+2) Find your computer's LAN IP (example `192.168.1.50`) and open this on the phone:
+
+`http://<YOUR_PC_IP>:3000`
+
+3) If login/OAuth is involved, update `.env.local` so URLs are not hardcoded to `localhost` when testing on mobile:
+- `NEXTAUTH_URL` must match the exact URL you open on the phone (IP + port).
+- Any `NEXT_PUBLIC_*` API base URL should not point to `localhost` (or use relative `/api/...` via proxy).
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
