@@ -35,6 +35,7 @@ export default function ManageProfilePage() {
   });
 
   const [showSuccess, setShowSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [newGenre, setNewGenre] = useState('');
   const [newInstrument, setNewInstrument] = useState('');
   const [newCollaborator, setNewCollaborator] = useState('');
@@ -104,15 +105,18 @@ export default function ManageProfilePage() {
 
   //update profile
   const handleSubmit = async () => {
-    async function update() {
+    setSubmitError(null);
+    try {
       await updateArtistProfile(1, formData);
       console.log('Profile Updated:', formData);
       setShowSuccess(true);
-      // auto-hide after 3 seconds
       setTimeout(() => setShowSuccess(false), 3000);
+      router.push('/pages/client/studios');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to update profile.";
+      setSubmitError(message);
+      console.error(err);
     }
-    update();
-    router.push('/pages/client/studios');
   };
 
   // Calculate profile completion percentage
@@ -426,7 +430,15 @@ export default function ManageProfilePage() {
                         </div>
                         
                         <img 
-                          src={formData.avatarImage || '/placeholder-avatar.jpg'} 
+                          src={
+                            formData.avatarImage &&
+                            (formData.avatarImage.startsWith("data:") ||
+                              formData.avatarImage.startsWith("/") ||
+                              formData.avatarImage.startsWith("http://") ||
+                              formData.avatarImage.startsWith("https://"))
+                              ? formData.avatarImage
+                              : "/studio/avatar.png"
+                          } 
                           className="w-32 h-32 rounded-full object-cover border-4 border-purple-600/50"
                           alt="Profile"
                         />
@@ -1046,13 +1058,18 @@ export default function ManageProfilePage() {
             </motion.div>
           </AnimatePresence>
         </div>
-        <div className="flex justify-center">
-            <button 
-                      onClick={handleSubmit}
-                      className={` mt-6 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-9 py-5 rounded-full font-bold transition-all duration-300 ${specialGothic.className}`}
-                    >
-                      Save Profile
-            </button>
+        <div className="flex flex-col items-center">
+          {submitError ? (
+            <div className="mt-6 w-full max-w-2xl rounded-lg border border-red-500/30 bg-red-900/20 px-4 py-3 text-sm text-red-200">
+              {submitError}
+            </div>
+          ) : null}
+          <button 
+            onClick={handleSubmit}
+            className={` mt-6 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-9 py-5 rounded-full font-bold transition-all duration-300 ${specialGothic.className}`}
+          >
+            Save Profile
+          </button>
         </div>
       
       

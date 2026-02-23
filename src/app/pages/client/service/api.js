@@ -1,6 +1,14 @@
 const API_BASE_URL = "/api/proxy";
 const api_base_url = `${API_BASE_URL}/artist`;
 
+async function readJsonSafe(res) {
+  try {
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 
 export async function getAllStudios() {
 
@@ -244,7 +252,8 @@ export async function updateProfile(artistId, profileData) {
   });
 
   if (!res.ok) {
-    throw new Error("Failed to update profile");
+    const err = await readJsonSafe(res);
+    throw new Error((err && (err.error || err.message)) || "Failed to update profile");
   }
 
   const updatedProfile = await getProfile(artistId);
@@ -348,7 +357,8 @@ export async function updateArtistProfile(id, Data) {
   });
 
   if (!res.ok) {
-    throw new Error("Failed to update profile");
+    const err = await readJsonSafe(res);
+    throw new Error((err && (err.error || err.message)) || "Failed to update profile");
   }
 
   return await res.json();
