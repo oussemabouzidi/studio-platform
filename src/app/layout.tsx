@@ -1,7 +1,31 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
-import { specialGothic } from "./fonts"; // your custom font import
+import { specialGothic, specialGothicRegular } from "./fonts";
+import LuxMotion from "./components/LuxMotion";
+import ScrollToTop from "./components/ScrollToTop";
+import LanguageSwitcher from "./components/LanguageSwitcher";
+import LocaleChangeOverlay from "./components/LocaleChangeOverlay";
+import I18nServerProvider from "./i18n/I18nServerProvider";
+import { getRequestLocale } from "./i18n/server";
+
+const geistSans = Geist({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-body",
+});
+
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-code",
+});
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-display",
+});
 
 export const metadata: Metadata = {
   title: "Audio Alchemic",
@@ -13,17 +37,32 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const locale = await getRequestLocale();
   return (
     <html
-      lang="en"
-      className={`${specialGothic.variable}`} // ✅ apply font variable
+      lang={locale}
+      className={[
+        geistSans.variable,
+        geistMono.variable,
+        playfair.variable,
+        specialGothic.variable,
+        specialGothicRegular.variable,
+      ].join(" ")}
     >
-      <body>{children}</body>
+      <body className="min-h-screen antialiased lux-theme">
+        <I18nServerProvider locale={locale}>
+          <LuxMotion />
+          <ScrollToTop />
+          <LanguageSwitcher />
+          <LocaleChangeOverlay />
+          {children}
+        </I18nServerProvider>
+      </body>
     </html>
   );
 }

@@ -1,11 +1,15 @@
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
-import { FaTrash, FaPlay, FaPause, FaPlus, FaMusic, FaUser, FaStar, FaGlobe, FaCalendarAlt, FaUsers, FaInstagram, FaSoundcloud, FaYoutube, FaCheckCircle, FaArrowLeft } from 'react-icons/fa';
+import { FaTrash, FaPlay, FaPause, FaPlus, FaMusic, FaUser, FaStar, FaGlobe, FaCalendarAlt, FaUsers, FaInstagram, FaSoundcloud, FaYoutube, FaCheckCircle, FaArrowLeft, FaEdit } from 'react-icons/fa';
 import { specialGothic } from '@/app/fonts';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Profile, DemoType } from '../../types';
-import { getProfile, updateArtistProfile, updateProfile } from '../../service/api';
+import { getProfile, updateArtistProfile, updateProfile, updatePortfolioItem } from '../../service/api';
 import { useRouter } from 'next/navigation';
+import ClientBackdrop from '@/app/components/ClientBackdrop';
+import { uploadMedia } from '@/app/lib/uploads/uploadMedia';
+import YesNoModal from '@/app/components/YesNoModal';
+import { useT } from '@/app/i18n/useT';
 
 // Suggestion data
 const genreSuggestions = ['Rock', 'Pop', 'Jazz', 'Classical', 'Hip Hop', 'Electronic', 'Metal', 'Folk', 'R&B', 'Reggae'];
@@ -13,8 +17,10 @@ const instrumentSuggestions = ['Guitar', 'Piano', 'Drums', 'Bass', 'Violin', 'Sa
 const languageSuggestions = ['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Russian', 'Chinese', 'Japanese', 'Korean'];
 
 export default function ManageProfilePage() {
+  const t = useT();
   const router = useRouter();
-  
+  const [artistId, setArtistId] = useState<number | null>(null);
+   
   // Form state and handlers
   const [formData, setFormData] = useState<Profile>({
     fullName: '',
@@ -36,11 +42,21 @@ export default function ManageProfilePage() {
 
   const [showSuccess, setShowSuccess] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isUploadingDemo, setIsUploadingDemo] = useState(false);
+  const [demoUploadProgress, setDemoUploadProgress] = useState<number | null>(null);
   const [newGenre, setNewGenre] = useState('');
   const [newInstrument, setNewInstrument] = useState('');
   const [newCollaborator, setNewCollaborator] = useState('');
   const [newLanguage, setNewLanguage] = useState('');
   const [newPortfolioItem, setNewPortfolioItem] = useState({ url: '', title: '', type: 'image' as 'image' | 'video' | 'audio' });
+  const [editingPortfolioIndex, setEditingPortfolioIndex] = useState<number | null>(null);
+  const [editingPortfolioId, setEditingPortfolioId] = useState<number | null>(null);
+  const [editingPortfolioDraft, setEditingPortfolioDraft] = useState({
+    url: '',
+    title: '',
+    type: 'image' as 'image' | 'video' | 'audio',
+  });
+  const [isSavingPortfolioItem, setIsSavingPortfolioItem] = useState(false);
 
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const demoInputRef = useRef<HTMLInputElement>(null);
@@ -55,9 +71,19 @@ export default function ManageProfilePage() {
 
   // Fetch profile
   useEffect(() => {
+    const rawId = localStorage.getItem("artist_id") ?? localStorage.getItem("user_id");
+    if (!rawId) return;
+    const id = Number(rawId);
+    if (!Number.isFinite(id)) return;
+    setArtistId(id);
+  }, []);
+
+  // Fetch profile
+  useEffect(() => {
     async function fetchProfile() {
       try {
-        const data = await getProfile(1);
+        if (!artistId) return;
+        const data = await getProfile(artistId);
         const profileData = (data ?? {}) as Partial<Profile>;
 
         setFormData((prev) => ({
@@ -81,7 +107,7 @@ export default function ManageProfilePage() {
       }
     }
     fetchProfile();
-  }, []);
+  }, [artistId]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -107,7 +133,8 @@ export default function ManageProfilePage() {
   const handleSubmit = async () => {
     setSubmitError(null);
     try {
-      await updateArtistProfile(1, formData);
+      if (!artistId) throw new Error("Missing artist id");
+      await updateArtistProfile(artistId, formData);
       console.log('Profile Updated:', formData);
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
@@ -115,6 +142,57 @@ export default function ManageProfilePage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to update profile.";
       setSubmitError(message);
+      console.error(err);
+    }
+  };
+
+  const openEditPortfolioItem = (index: number) => {
+    const item = formData.portfolio[index];
+    if (!item) return;
+
+    setEditingPortfolioIndex(index);
+    setEditingPortfolioId(typeof item.id === "number" ? item.id : null);
+    setEditingPortfolioDraft({ url: item.url, title: item.title, type: item.type });
+  };
+
+  const closeEditPortfolioItem = () => {
+    setEditingPortfolioIndex(null);
+    setEditingPortfolioId(null);
+    setIsSavingPortfolioItem(false);
+  };
+
+  const applyPortfolioDraftLocally = () => {
+    if (editingPortfolioIndex === null) return;
+    setFormData((prev) => ({
+      ...prev,
+      portfolio: prev.portfolio.map((p, i) =>
+        i === editingPortfolioIndex ? { ...p, ...editingPortfolioDraft } : p
+      ),
+    }));
+    closeEditPortfolioItem();
+  };
+
+  const saveEditedPortfolioItem = async () => {
+    if (!artistId) return;
+    if (editingPortfolioIndex === null) return;
+    if (!editingPortfolioId) return;
+
+    setIsSavingPortfolioItem(true);
+    try {
+      const updated = await updatePortfolioItem(artistId, editingPortfolioId, editingPortfolioDraft);
+      setFormData((prev) => ({
+        ...prev,
+        portfolio: prev.portfolio.map((p, i) =>
+          i === editingPortfolioIndex ? { ...p, ...updated } : p
+        ),
+      }));
+      closeEditPortfolioItem();
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 2000);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to update portfolio item.";
+      setSubmitError(message);
+      setIsSavingPortfolioItem(false);
       console.error(err);
     }
   };
@@ -158,27 +236,41 @@ export default function ManageProfilePage() {
     }
   };
 
-  const handleDemoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDemoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    
-    Array.from(files).forEach(file => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const title = file.name.replace(/\.[^/.]+$/, ""); // Remove file extension
+
+    const selected = Array.from(files);
+    e.target.value = '';
+
+    for (const file of selected) {
+      try {
+        setIsUploadingDemo(true);
+        setDemoUploadProgress(0);
+
+        const uploaded = await uploadMedia(file, {
+          onProgress: (p) => setDemoUploadProgress(p),
+        });
+
+        const title = file.name.replace(/\.[^/.]+$/, "");
         const newTrack: DemoType = {
-          file: reader.result,
+          file: uploaded.url,
           title: title || 'New Track',
           playing: false
         };
-        
+
         setFormData(prev => ({
           ...prev,
           demo: [...prev.demo, newTrack]
         }));
-      };
-      reader.readAsDataURL(file);
-    });
+      } catch (err: any) {
+        setSubmitError(err?.message || 'Failed to upload demo track');
+        break;
+      } finally {
+        setIsUploadingDemo(false);
+        setDemoUploadProgress(null);
+      }
+    }
   };
 
   const toggleDemoPlay = (index: number) => {
@@ -320,49 +412,102 @@ export default function ManageProfilePage() {
   
   // Define tabs
   const tabs = [
-    { id: 'profile', label: 'Profile', icon: <FaUser className="mr-2" /> },
-    { id: 'contact', label: 'Contact', icon: <FaGlobe className="mr-2" /> },
-    { id: 'skills', label: 'Skills', icon: <FaMusic className="mr-2" /> },
-    { id: 'experience', label: 'Experience', icon: <FaStar className="mr-2" /> },
-    { id: 'portfolio', label: 'Portfolio', icon: <FaCalendarAlt className="mr-2" /> },
+    { id: 'profile', label: t('profile.tabs.profile'), icon: <FaUser className="mr-2" /> },
+    { id: 'contact', label: t('profile.tabs.contact'), icon: <FaGlobe className="mr-2" /> },
+    { id: 'skills', label: t('profile.tabs.skills'), icon: <FaMusic className="mr-2" /> },
+    { id: 'experience', label: t('profile.tabs.experience'), icon: <FaStar className="mr-2" /> },
+    { id: 'portfolio', label: t('profile.tabs.portfolio'), icon: <FaCalendarAlt className="mr-2" /> },
   ];
 
   const [activeTab, setActiveTab] = useState(tabs[0].id);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white p-4 sm:p-8">
-      <div className="max-w-6xl mx-auto ">
+    <div className="min-h-screen relative overflow-hidden bg-gray-950 text-white p-4 sm:p-8 lux-rect">
+      <ClientBackdrop />
+
+      <YesNoModal
+        open={editingPortfolioIndex !== null}
+        title={t('profile.portfolioEdit.confirmTitle')}
+        description={
+          editingPortfolioId
+            ? t('profile.portfolioEdit.confirmDescription')
+            : t('profile.errors.missingPortfolioId')
+        }
+        yesText={t('common.yes')}
+        noText={t('common.no')}
+        onNo={closeEditPortfolioItem}
+        onYes={editingPortfolioId ? saveEditedPortfolioItem : applyPortfolioDraftLocally}
+        loading={isSavingPortfolioItem}
+      >
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <input
+              type="text"
+              value={editingPortfolioDraft.title}
+              onChange={(e) =>
+                setEditingPortfolioDraft((p) => ({ ...p, title: e.target.value }))
+              }
+              placeholder={t('profile.portfolioEdit.titlePlaceholder')}
+              className="lux-input"
+              disabled={isSavingPortfolioItem}
+            />
+            <select
+              value={editingPortfolioDraft.type}
+              onChange={(e) =>
+                setEditingPortfolioDraft((p) => ({ ...p, type: e.target.value as any }))
+              }
+              className="lux-input text-white"
+              disabled={isSavingPortfolioItem}
+            >
+              <option value="image">{t('profile.portfolioTypes.image')}</option>
+              <option value="video">{t('profile.portfolioTypes.video')}</option>
+              <option value="audio">{t('profile.portfolioTypes.audio')}</option>
+            </select>
+          </div>
+          <input
+            type="text"
+            value={editingPortfolioDraft.url}
+            onChange={(e) =>
+              setEditingPortfolioDraft((p) => ({ ...p, url: e.target.value }))
+            }
+            placeholder={t('profile.portfolioEdit.urlPlaceholder')}
+            className="lux-input"
+            disabled={isSavingPortfolioItem}
+          />
+        </div>
+      </YesNoModal>
+      <div className="relative z-10 max-w-6xl mx-auto ">
         {/* Back Button */}
         <button 
           onClick={() => router.back()} 
-          className="flex items-center text-gray-300 hover:text-white mb-6 transition-colors"
+          className="lux-btn-ghost inline-flex items-center mb-6 px-4 py-2 text-sm font-medium text-white/85"
         >
           <FaArrowLeft className="mr-2" />
-          Back to Dashboard
+          {t('profile.backToDashboard')}
         </button>      
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
           <h1 className={`text-3xl sm:text-4xl font-bold ${specialGothic.className}`}>
-            Manage Your Profile
+            {t('profile.manageTitle')}
           </h1>
           
           {/* Modern Tab Navigation */}
           <div className="m-auto mt-4 md:mt-0">
-            <div className="relative bg-gray-800/50 backdrop-blur-lg rounded-full p-1 border border-gray-500 border-t-white/30 border-l-white/30 shadow-2xl">
+            <div className="lux-card lux-rect p-1 shadow-2xl bg-black/35 border-white/10">
               <div className="flex space-x-1">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
-                    className={`relative px-4 py-2 rounded-full text-sm font-special transition-colors duration-300 ${
+                    className={`relative px-4 py-2 rounded-xl text-sm font-special transition-colors duration-300 ${
                       activeTab === tab.id
                         ? 'text-white opacity-100 drop-shadow-[0_0_8px_rgba(147,51,234,0.8)]'
-                        : 'text-white hover:text-blue opacity-50'
+                        : 'text-white/60 hover:text-white'
                     }`}
                     onClick={() => setActiveTab(tab.id)}
                   >
                     {/* Background highlight */}
                     {activeTab === tab.id && (
                       <motion.div
-                        className="absolute inset-0 rounded-full bg-purple-600/40 backdrop-blur-3xl z-0"
+                        className="absolute inset-0 rounded-xl bg-white/6 backdrop-blur-3xl border border-white/10 shadow-[0_0_22px_rgba(207,210,218,0.12)] z-0"
                         layoutId="activeTab"
                         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                       />
@@ -381,7 +526,7 @@ export default function ManageProfilePage() {
         </div>
 
         {/* Tab Content */}
-        <div className="bg-gray-800/50 backdrop-blur-lg rounded-2xl border border-gray-700 overflow-visible">
+        <div className="lux-card lux-rect overflow-visible">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
@@ -444,7 +589,7 @@ export default function ManageProfilePage() {
                         />
                         <button 
                           onClick={() => avatarInputRef.current?.click()}
-                          className="absolute bottom-2 right-2 bg-purple-600 p-2 rounded-full hover:bg-purple-700 transition-all"
+                          className="absolute bottom-2 right-2 lux-btn-metal p-2 rounded-full transition-transform hover:-translate-y-0.5"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
@@ -469,10 +614,10 @@ export default function ManageProfilePage() {
                       {/* Completion Status Bar */}
                       <div className="w-full mt-4">
                         <div className="flex justify-between text-xs text-gray-400 mb-1">
-                          <span>Profile Completion</span>
+                          <span>{t('profile.profileCompletion')}</span>
                           <span>{profileCompletion}%</span>
                         </div>
-                        <div className="w-full bg-gray-700 rounded-full h-2">
+                        <div className="w-full bg-white/10 rounded-full h-2">
                           <div 
                             className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full"
                             style={{ width: `${profileCompletion}%` }}
@@ -483,17 +628,17 @@ export default function ManageProfilePage() {
                     
                     <div className="space-y-4">
                       <div>
-                        <h3 className="text-gray-400 text-sm mb-1">EXPERIENCE</h3>
+                        <h3 className="text-gray-400 text-sm mb-1">{t('profile.experience')}</h3>
                         <div className="flex items-center">
                           <FaStar className="text-yellow-400 mr-1" />
-                          <span className="capitalize">{formData.experienceLevel}</span>
+                          <span className="capitalize">{t(`profile.experienceLevels.${formData.experienceLevel}`)}</span>
                           <span className="mx-2">•</span>
-                          <span>{formData.yearsOfExperience} years</span>
+                          <span>{t('profile.yearsValue', { years: formData.yearsOfExperience ?? 0 })}</span>
                         </div>
                       </div>
                       
                       <div>
-                        <h3 className="text-gray-400 text-sm mb-1">LOCATION</h3>
+                        <h3 className="text-gray-400 text-sm mb-1">{t('profile.location')}</h3>
                         <p>{formData.location}</p>
                       </div>
                     </div>
@@ -503,48 +648,48 @@ export default function ManageProfilePage() {
                   
                   {/* Right Column */}
                   <div className="lg:col-span-2">
-                    <h2 className={`text-xl font-bold mb-6 pb-2 border-b border-gray-700 ${specialGothic.className}`}>
-                      Personal Information
+                    <h2 className={`text-xl font-bold mb-6 pb-2 border-b border-white/10 ${specialGothic.className}`}>
+                      {t('profile.personalInformation')}
                     </h2>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-gray-400 text-sm mb-2">Full Name</label>
+                        <label className="block text-gray-400 text-sm mb-2">{t('profile.fullName')}</label>
                         <input
                           type="text"
                           value={formData.fullName}
                           onChange={(e) => setFormData({...formData, fullName: e.target.value})}
-                          className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          className="lux-input"
                         />
                       </div>
                       
                       <div>
-                        <label className="block text-gray-400 text-sm mb-2">Artist Name</label>
+                        <label className="block text-gray-400 text-sm mb-2">{t('profile.artistName')}</label>
                         <input
                           type="text"
                           value={formData.artistName}
                           onChange={(e) => setFormData({...formData, artistName: e.target.value})}
-                          className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          className="lux-input"
                         />
                       </div>
                       
                       <div className="md:col-span-2">
-                        <label className="block text-gray-400 text-sm mb-2">Bio</label>
+                        <label className="block text-gray-400 text-sm mb-2">{t('profile.bio')}</label>
                         <textarea
                           value={formData.bio}
                           onChange={(e) => setFormData({...formData, bio: e.target.value})}
                           rows={3}
-                          className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          className="lux-input"
                         />
                       </div>
                       
                       <div className="md:col-span-2">
-                        <label className="block text-gray-400 text-sm mb-2">Location</label>
+                        <label className="block text-gray-400 text-sm mb-2">{t('profile.location')}</label>
                         <input
                           type="text"
                           value={formData.location}
                           onChange={(e) => setFormData({...formData, location: e.target.value})}
-                          className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          className="lux-input"
                         />
                       </div>
                     </div>
@@ -554,77 +699,77 @@ export default function ManageProfilePage() {
               
               {activeTab === 'contact' && (
                 <div>
-                  <h2 className={`text-xl font-bold mb-6 pb-2 border-b border-gray-700 ${specialGothic.className}`}>
-                    Contact Information
+                  <h2 className={`text-xl font-bold mb-6 pb-2 border-b border-white/10 ${specialGothic.className}`}>
+                    {t('profile.contactInformation')}
                   </h2>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-gray-400 text-sm mb-2">Email</label>
+                      <label className="block text-gray-400 text-sm mb-2">{t('common.email')}</label>
                       <input
                         type="email"
                         name="email"
                         value={formData.contact.email}
                         onChange={handleContactChange}
-                        className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="lux-input"
                       />
                     </div>
                     
                     <div>
-                      <label className="block text-gray-400 text-sm mb-2">Phone</label>
+                      <label className="block text-gray-400 text-sm mb-2">{t('common.phone')}</label>
                       <input
                         type="text"
                         name="phone"
                         value={formData.contact.phone}
                         onChange={handleContactChange}
-                        className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="lux-input"
                       />
                     </div>
                     
                     <div>
-                      <label className="block text-gray-400 text-sm mb-2">Instagram</label>
+                      <label className="block text-gray-400 text-sm mb-2">{t('common.instagram')}</label>
                       <input
                         type="text"
                         name="instagram"
                         value={formData.contact.instagram}
                         onChange={handleContactChange}
-                        className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="lux-input"
                       />
                     </div>
                     
                     <div>
-                      <label className="block text-gray-400 text-sm mb-2">SoundCloud</label>
+                      <label className="block text-gray-400 text-sm mb-2">{t('common.soundcloud')}</label>
                       <input
                         type="text"
                         name="soundcloud"
                         value={formData.contact.soundcloud}
                         onChange={handleContactChange}
-                        className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="lux-input"
                       />
                     </div>
                     
                     <div >
-                      <label className="block text-gray-400 text-sm mb-2">YouTube</label>
+                      <label className="block text-gray-400 text-sm mb-2">{t('common.youtube')}</label>
                       <input
                         type="text"
                         name="youtube"
                         value={formData.contact.youtube}
                         onChange={handleContactChange}
-                        className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="lux-input"
                       />
                       </div>
 <div>
-  <label className="block text-gray-400 text-sm mb-2">Spotify</label>
+  <label className="block text-gray-400 text-sm mb-2">{t('common.spotify')}</label>
   <input
     type="text"
     name="spotify"
     value={formData.contact.spotify || ''}
     onChange={handleContactChange}
-    className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+    className="lux-input"
   />
 </div>                  
-                    <div className="pt-4 border-t border-gray-700 md:col-span-2">
-                      <h3 className="text-gray-400 text-sm mb-2">SOCIAL LINKS</h3>
+                    <div className="pt-4 border-t border-white/10 md:col-span-2">
+                      <h3 className="text-gray-400 text-sm mb-2">{t('profile.socialLinks')}</h3>
                       <div className="flex space-x-4">
                         {formData.contact.instagram && (
                           <a href={`https://instagram.com/${formData.contact.instagram}`} 
@@ -654,10 +799,10 @@ export default function ManageProfilePage() {
   <div className="flex flex-col gap-6 overflow-visible">
     <div className="flex flex-col md:flex-row gap-6 overflow-x-visible">
       {/* Genre Section */}
-      <div className="flex-1 bg-gray-800/50 backdrop-blur-lg rounded-2xl border border-gray-700 p-6 relative overflow-visible">
+       <div className="flex-1 lux-card lux-rect p-6 relative overflow-visible">
         <div className="flex justify-between items-center mb-4">
           <h2 className={`text-xl font-bold ${specialGothic.className}`}>
-            <FaMusic className="inline mr-2" /> Genres
+            <FaMusic className="inline mr-2" /> {t('profile.genres')}
           </h2>
         </div>
         
@@ -667,24 +812,24 @@ export default function ManageProfilePage() {
             value={newGenre}
             onChange={(e) => setNewGenre(e.target.value)}
             onFocus={() => setShowGenreSuggestions(true)}
-            placeholder="Add genre"
-            className="flex-1 bg-gray-700/50 border border-gray-600 rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            placeholder={t('profile.placeholders.addGenre')}
+            className="lux-input flex-1 rounded-l-lg"
           />
           <button 
             onClick={() => addGenre()}
-            className="bg-purple-600 hover:bg-purple-700 px-4 rounded-r-lg"
+            className="lux-btn-metal px-4 rounded-r-lg"
           >
             <FaPlus />
           </button>
           
           {/* Genre Suggestions */}
           {showGenreSuggestions && (
-            <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+            <div className="absolute z-50 top-full left-0 right-0 mt-2 lux-popover lux-rect shadow-2xl max-h-56 overflow-y-auto">
               {filteredGenreSuggestions.length > 0 ? (
                 filteredGenreSuggestions.map((suggestion, index) => (
                   <div
                     key={index}
-                    className="px-4 py-2 cursor-pointer hover:bg-purple-600"
+                    className="px-4 py-2 cursor-pointer hover:bg-white/5"
                     onMouseDown={(e) => {
                       e.preventDefault();
                       addGenre(suggestion);
@@ -694,7 +839,7 @@ export default function ManageProfilePage() {
                   </div>
                 ))
               ) : (
-                <div className="px-4 py-2 text-gray-400">No matching genres</div>
+                <div className="px-4 py-2 text-gray-400">{t('profile.noMatchingGenres')}</div>
               )}
             </div>
           )}
@@ -702,7 +847,7 @@ export default function ManageProfilePage() {
         
         <div className="flex flex-wrap gap-2">
           {formData.genres.map((genre, index) => (
-            <div key={index} className="bg-purple-600/20 text-purple-300 px-3 py-1 rounded-full flex items-center">
+            <div key={index} className="lux-chip border-purple-400/20 bg-purple-500/10 text-purple-100 flex items-center">
               {genre}
               <button 
                 onClick={() => removeGenre(genre)}
@@ -716,10 +861,10 @@ export default function ManageProfilePage() {
       </div>
       
       {/* Instrument Section */}
-      <div className="flex-1 bg-gray-800/50 backdrop-blur-lg rounded-2xl border border-gray-700 p-6 relative overflow-visible">
+       <div className="flex-1 lux-card lux-rect p-6 relative overflow-visible">
         <div className="flex justify-between items-center mb-4">
           <h2 className={`text-xl font-bold ${specialGothic.className}`}>
-            <FaUser className="inline mr-2" /> Instruments
+            <FaUser className="inline mr-2" /> {t('profile.instruments')}
           </h2>
         </div>
         
@@ -729,24 +874,24 @@ export default function ManageProfilePage() {
             value={newInstrument}
             onChange={(e) => setNewInstrument(e.target.value)}
             onFocus={() => setShowInstrumentSuggestions(true)}
-            placeholder="Add instrument"
-            className="flex-1 bg-gray-700/50 border border-gray-600 rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            placeholder={t('profile.placeholders.addInstrument')}
+            className="lux-input flex-1 rounded-l-lg"
           />
           <button 
             onClick={() => addInstrument()}
-            className="bg-purple-600 hover:bg-purple-700 px-4 rounded-r-lg"
+            className="lux-btn-metal px-4 rounded-r-lg"
           >
             <FaPlus />
           </button>
           
           {/* Instrument Suggestions */}
           {showInstrumentSuggestions && (
-            <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+            <div className="absolute z-50 top-full left-0 right-0 mt-2 lux-popover lux-rect shadow-2xl max-h-56 overflow-y-auto">
               {filteredInstrumentSuggestions.length > 0 ? (
                 filteredInstrumentSuggestions.map((suggestion, index) => (
                   <div
                     key={index}
-                    className="px-4 py-2 cursor-pointer hover:bg-blue-600"
+                    className="px-4 py-2 cursor-pointer hover:bg-white/5"
                     onMouseDown={(e) => {
                       e.preventDefault();
                       addInstrument(suggestion);
@@ -756,7 +901,7 @@ export default function ManageProfilePage() {
                   </div>
                 ))
               ) : (
-                <div className="px-4 py-2 text-gray-400">No matching instruments</div>
+                <div className="px-4 py-2 text-gray-400">{t('profile.noMatchingInstruments')}</div>
               )}
             </div>
           )}
@@ -764,7 +909,7 @@ export default function ManageProfilePage() {
         
         <div className="flex flex-wrap gap-2">
           {formData.instruments.map((instrument, index) => (
-            <div key={index} className="bg-blue-600/20 text-blue-300 px-3 py-1 rounded-full flex items-center">
+            <div key={index} className="lux-chip border-blue-400/20 bg-blue-500/10 text-blue-100 flex items-center">
               {instrument}
               <button 
                 onClick={() => removeInstrument(instrument)}
@@ -779,12 +924,12 @@ export default function ManageProfilePage() {
     </div>
     
     {/* Language Section */}
-    <div className={`bg-gray-800/50 backdrop-blur-lg rounded-2xl border border-gray-700 p-6 relative overflow-visible ${
-    showGenreSuggestions || showInstrumentSuggestions ? "-z-10" : ""
-  }`}>
+     <div className={`lux-card lux-rect p-6 relative overflow-visible ${
+     showGenreSuggestions || showInstrumentSuggestions ? "-z-10" : ""
+   }`}>
       <div className="flex justify-between items-center mb-4">
         <h2 className={`text-xl font-bold ${specialGothic.className}`}>
-          <FaGlobe className="inline mr-2" /> Languages
+          <FaGlobe className="inline mr-2" /> {t('profile.languages')}
         </h2>
       </div>
       
@@ -794,24 +939,24 @@ export default function ManageProfilePage() {
           value={newLanguage}
           onChange={(e) => setNewLanguage(e.target.value)}
           onFocus={() => setShowLanguageSuggestions(true)}
-          placeholder="Add language"
-          className="flex-1 bg-gray-700/50 border border-gray-600 rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+          placeholder={t('profile.placeholders.addLanguage')}
+          className="lux-input flex-1 rounded-l-lg"
         />
         <button 
           onClick={() => addLanguage()}
-          className="bg-purple-600 hover:bg-purple-700 px-4 rounded-r-lg"
+          className="lux-btn-metal px-4 rounded-r-lg"
         >
           <FaPlus />
         </button>
         
         {/* Language Suggestions */}
         {showLanguageSuggestions && (
-          <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+          <div className="absolute z-50 top-full left-0 right-0 mt-2 lux-popover lux-rect shadow-2xl max-h-56 overflow-y-auto">
             {filteredLanguageSuggestions.length > 0 ? (
               filteredLanguageSuggestions.map((suggestion, index) => (
                 <div
                   key={index}
-                  className="px-4 py-2 cursor-pointer hover:bg-green-600"
+                  className="px-4 py-2 cursor-pointer hover:bg-white/5"
                   onMouseDown={(e) => {
                     e.preventDefault();
                     addLanguage(suggestion);
@@ -821,7 +966,7 @@ export default function ManageProfilePage() {
                 </div>
               ))
             ) : (
-              <div className="px-4 py-2 text-gray-400">No matching languages</div>
+              <div className="px-4 py-2 text-gray-400">{t('profile.noMatchingLanguages')}</div>
             )}
           </div>
         )}
@@ -829,7 +974,7 @@ export default function ManageProfilePage() {
       
       <div className="flex flex-wrap gap-2">
         {formData.languages.map((language, index) => (
-          <div key={index} className="bg-green-600/20 text-green-300 px-3 py-1 rounded-full flex items-center">
+          <div key={index} className="lux-chip border-green-400/20 bg-green-500/10 text-green-100 flex items-center">
             {language}
             <button 
               onClick={() => removeLanguage(language)}
@@ -846,58 +991,58 @@ export default function ManageProfilePage() {
               
               {activeTab === 'experience' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-gray-800/50 backdrop-blur-lg rounded-2xl border border-gray-700 p-6">
+                  <div className="lux-card lux-rect p-6">
                     <h2 className={`text-xl font-bold mb-4 ${specialGothic.className}`}>
-                      Experience
+                      {t('profile.experience')}
                     </h2>
                     
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-gray-400 text-sm mb-2">Experience Level</label>
+                        <label className="block text-gray-400 text-sm mb-2">{t('profile.experienceLevel')}</label>
                         <select
                           value={formData.experienceLevel}
                           onChange={(e) => setFormData({...formData, experienceLevel: e.target.value as any})}
-                          className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          className="lux-input text-white"
                         >
-                          <option value="beginner">Beginner</option>
-                          <option value="intermediate">Intermediate</option>
-                          <option value="pro">Professional</option>
+                          <option value="beginner">{t('profile.experienceLevels.beginner')}</option>
+                          <option value="intermediate">{t('profile.experienceLevels.intermediate')}</option>
+                          <option value="pro">{t('profile.experienceLevels.pro')}</option>
                         </select>
                       </div>
                       
                       <div>
-                        <label className="block text-gray-400 text-sm mb-2">Years of Experience</label>
+                        <label className="block text-gray-400 text-sm mb-2">{t('profile.yearsOfExperience')}</label>
                         <input
                           type="number"
                           value={formData.yearsOfExperience || ''}
                           onChange={(e) => setFormData({...formData, yearsOfExperience: parseInt(e.target.value) || 0})}
-                          className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          className="lux-input"
                         />
                       </div>
                     </div>
                   </div>
                   
-                  <div className="bg-gray-800/50 backdrop-blur-lg rounded-2xl border border-gray-700 p-6">
+                  <div className="lux-card lux-rect p-6">
                     <h2 className={`text-xl font-bold mb-4 ${specialGothic.className}`}>
-                      <FaCalendarAlt className="inline mr-2" /> Availability
+                      <FaCalendarAlt className="inline mr-2" /> {t('profile.availability')}
                     </h2>
                     
                     <div>
-                      <label className="block text-gray-400 text-sm mb-2">Availability</label>
+                      <label className="block text-gray-400 text-sm mb-2">{t('profile.availability')}</label>
                       <textarea
                         value={formData.availability}
                         onChange={(e) => setFormData({...formData, availability: e.target.value})}
                         rows={3}
-                        className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="Describe your availability..."
+                        className="lux-input"
+                        placeholder={t('profile.placeholders.availability')}
                       />
                     </div>
                   </div>
                   
-                  <div className="bg-gray-800/50 backdrop-blur-lg rounded-2xl border border-gray-700 p-6 md:col-span-2">
+                  <div className="lux-card lux-rect p-6 md:col-span-2">
                     <div className="flex justify-between items-center mb-4">
                       <h2 className={`text-xl font-bold ${specialGothic.className}`}>
-                        <FaUsers className="inline mr-2" /> Collaborators
+                        <FaUsers className="inline mr-2" /> {t('profile.collaborators')}
                       </h2>
                     </div>
                     
@@ -906,12 +1051,12 @@ export default function ManageProfilePage() {
                         type="text"
                         value={newCollaborator}
                         onChange={(e) => setNewCollaborator(e.target.value)}
-                        placeholder="Add collaborator"
-                        className="flex-1 bg-gray-700/50 border border-gray-600 rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        placeholder={t('profile.placeholders.addCollaborator')}
+                        className="lux-input flex-1 rounded-l-lg"
                       />
                       <button 
                         onClick={addCollaborator}
-                        className="bg-purple-600 hover:bg-purple-700 px-4 rounded-r-lg"
+                        className="lux-btn-metal px-4 rounded-r-lg"
                       >
                         <FaPlus />
                       </button>
@@ -919,7 +1064,7 @@ export default function ManageProfilePage() {
                     
                     <div className="space-y-2">
                       {formData.collaborators.map((collaborator, index) => (
-                        <div key={index} className="flex justify-between items-center bg-gray-700/30 p-3 rounded-lg">
+                        <div key={index} className="flex justify-between items-center p-3 rounded-lg border border-white/10 bg-black/25">
                           <span>{collaborator}</span>
                           <button 
                             onClick={() => removeCollaborator(collaborator)}
@@ -937,14 +1082,14 @@ export default function ManageProfilePage() {
               {activeTab === 'portfolio' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Demo Tracks Section */}
-                  <div className="bg-gray-800/50 backdrop-blur-lg rounded-2xl border border-gray-700 p-6">
+                  <div className="lux-card lux-rect p-6">
                     <h2 className={`text-xl font-bold mb-4 ${specialGothic.className}`}>
                       Demo Tracks
                     </h2>
                     
                     <div className="space-y-4">
                       {formData.demo.map((track, index) => (
-                        <div key={index} className="bg-gray-700/30 p-4 rounded-lg">
+                        <div key={index} className="p-4 rounded-lg border border-white/10 bg-black/25">
                           <div className="flex justify-between items-center mb-3">
                             <span className="font-medium">{track.title}</span>
                             <button 
@@ -958,11 +1103,11 @@ export default function ManageProfilePage() {
                           <div className="flex items-center">
                             <button 
                               onClick={() => toggleDemoPlay(index)}
-                              className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center mr-4"
+                              className="w-10 h-10 rounded-full lux-btn-metal flex items-center justify-center mr-4"
                             >
                               {track.playing ? <FaPause /> : <FaPlay className="ml-1" />}
                             </button>
-                            <div className="flex-1 bg-gray-600 rounded-full h-2">
+                            <div className="flex-1 bg-white/10 rounded-full h-2">
                               <div className="bg-purple-500 h-2 rounded-full w-1/3"></div>
                             </div>
                           </div>
@@ -971,12 +1116,21 @@ export default function ManageProfilePage() {
                     </div>
                     
                     <div 
-                      className="mt-4 border-2 border-dashed border-gray-600 rounded-lg p-4 text-center cursor-pointer hover:bg-gray-700/30 transition-colors"
-                      onClick={() => demoInputRef.current?.click()}
+                      className={`mt-4 border-2 border-dashed border-white/15 rounded-lg p-4 text-center bg-black/20 transition-colors ${
+                        isUploadingDemo ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:bg-white/5"
+                      }`}
+                      onClick={() => {
+                        if (!isUploadingDemo) demoInputRef.current?.click();
+                      }}
                     >
                       <FaPlus className="mx-auto mb-2" />
-                      <p className="text-gray-400">Add demo track</p>
-                      <p className="text-sm text-gray-500 mt-1">MP3, WAV, or MP4 files</p>
+                      <p className="text-gray-400">{t('profile.addDemoTrack')}</p>
+                      <p className="text-sm text-gray-500 mt-1">{t('profile.demoFormats')}</p>
+                      {isUploadingDemo ? (
+                        <p className="text-sm text-purple-200 mt-2">
+                          Uploading… {demoUploadProgress ?? 0}%
+                        </p>
+                      ) : null}
                       <input 
                         type="file" 
                         ref={demoInputRef} 
@@ -989,16 +1143,16 @@ export default function ManageProfilePage() {
                   </div>
                   
                   {/* Portfolio Items Section */}
-                  <div className="bg-gray-800/50 backdrop-blur-lg rounded-2xl border border-gray-700 p-6">
+                  <div className="lux-card lux-rect p-6">
                     <h2 className={`text-xl font-bold mb-4 ${specialGothic.className}`}>
                       Portfolio
                     </h2>
                     
                     <div className="space-y-4">
                       {formData.portfolio.map((item, index) => (
-                        <div key={index} className="flex justify-between items-center bg-gray-700/30 p-3 rounded-lg">
+                        <div key={item.id ?? index} className="flex justify-between items-center p-3 rounded-lg border border-white/10 bg-black/25">
                           <div className="flex items-center">
-                            <div className="bg-gray-600 w-10 h-10 rounded flex items-center justify-center mr-3">
+                            <div className="w-10 h-10 rounded flex items-center justify-center mr-3 border border-white/10 bg-white/5">
                               {item.type === 'image' && <FaImage />}
                               {item.type === 'video' && <FaVideo />}
                               {item.type === 'audio' && <FaMusic />}
@@ -1008,47 +1162,58 @@ export default function ManageProfilePage() {
                               <div className="text-sm text-gray-400">{item.url}</div>
                             </div>
                           </div>
-                          <button 
-                            onClick={() => removePortfolioItem(index)}
-                            className="text-red-400 hover:text-red-300"
-                          >
-                            <FaTrash />
-                          </button>
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => openEditPortfolioItem(index)}
+                              className="text-blue-300 hover:text-blue-200"
+                              aria-label={t('profile.editPortfolioItem')}
+                            >
+                              <FaEdit />
+                            </button>
+                            <button 
+                              onClick={() => removePortfolioItem(index)}
+                              className="text-red-400 hover:text-red-300"
+                              aria-label={t('profile.removePortfolioItem')}
+                            >
+                              <FaTrash />
+                            </button>
+                          </div>
                         </div>
                       ))}
                       
-                      <div className="border-t border-gray-700 pt-4 mt-4">
-                        <h3 className="text-gray-400 text-sm mb-2">Add Portfolio Item</h3>
+                      <div className="border-t border-white/10 pt-4 mt-4">
+                        <h3 className="text-gray-400 text-sm mb-2">{t('profile.addPortfolioItem')}</h3>
                         <div className="grid grid-cols-2 gap-3 mb-3">
                           <input
                             type="text"
                             value={newPortfolioItem.title}
                             onChange={(e) => setNewPortfolioItem({...newPortfolioItem, title: e.target.value})}
-                            placeholder="Title"
-                            className="bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            placeholder={t('profile.portfolioEdit.titlePlaceholder')}
+                            className="lux-input"
                           />
                           <select
                             value={newPortfolioItem.type}
                             onChange={(e) => setNewPortfolioItem({...newPortfolioItem, type: e.target.value as any})}
-                            className="bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            className="lux-input text-white"
                           >
-                            <option value="image">Image</option>
-                            <option value="video">Video</option>
-                            <option value="audio">Audio</option>
+                            <option value="image">{t('profile.portfolioTypes.image')}</option>
+                            <option value="video">{t('profile.portfolioTypes.video')}</option>
+                            <option value="audio">{t('profile.portfolioTypes.audio')}</option>
                           </select>
                         </div>
                         <input
                           type="text"
                           value={newPortfolioItem.url}
                           onChange={(e) => setNewPortfolioItem({...newPortfolioItem, url: e.target.value})}
-                          placeholder="URL"
-                          className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-2 mb-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          placeholder={t('profile.portfolioEdit.urlPlaceholder')}
+                          className="lux-input"
                         />
                         <button 
                           onClick={addPortfolioItem}
-                          className="w-full bg-purple-600 hover:bg-purple-700 py-2 rounded-lg flex items-center justify-center"
+                          className="w-full lux-btn-metal py-2 flex items-center justify-center"
                         >
-                          <FaPlus className="mr-2" /> Add Item
+                          <FaPlus className="mr-2" /> {t('profile.addItem')}
                         </button>
                       </div>
                     </div>
@@ -1066,9 +1231,9 @@ export default function ManageProfilePage() {
           ) : null}
           <button 
             onClick={handleSubmit}
-            className={` mt-6 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-9 py-5 rounded-full font-bold transition-all duration-300 ${specialGothic.className}`}
+            className={`mt-6 lux-btn-metal px-9 py-4 font-bold transition-all duration-300 ${specialGothic.className}`}
           >
-            Save Profile
+            {t('profile.saveProfile')}
           </button>
         </div>
       
@@ -1081,10 +1246,10 @@ export default function ManageProfilePage() {
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 100, scale: 0.8 }}
                             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                            className="fixed top-8 right-15 transform -translate-x-1/2 bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-full shadow-lg flex items-center space-x-2 backdrop-blur-sm"
+                            className="fixed top-8 right-8 z-[80] bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-full shadow-lg flex items-center space-x-2 backdrop-blur-sm"
                           >
                             <FaCheckCircle className="text-xl" />
-                            <span className="font-semibold">Profile saved successfully!</span>
+                            <span className="font-semibold">{t('profile.savedSuccessfully')}</span>
                           </motion.div>
                         )}
                       </AnimatePresence>

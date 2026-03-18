@@ -4,10 +4,13 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import BookingDialog from '../../../../../components/BookingDialog';
+import StudioTour360, { StudioTourScene } from '@/app/components/StudioTour360';
+import { useI18n } from '@/app/i18n/I18nProvider';
+import { useT } from '@/app/i18n/useT';
 import { 
   FaStar, FaMusic, FaHeadphones, FaWifi, FaCoffee, FaParking, 
   FaCalendarAlt, FaClock, FaUserFriends, FaMapMarkerAlt, FaLanguage,
-  FaHeart, FaRegHeart,
+  FaHeart, FaRegHeart, FaInstagram, FaYoutube,
   FaArrowLeft
 } from 'react-icons/fa';
 import { FaStar as FaStarSolid, FaStarHalfAlt, FaRegStar } from 'react-icons/fa';
@@ -15,15 +18,49 @@ import { Studio_details } from '../../../types';
 import { useParams } from 'next/navigation';
 import { addFavorite, createReview, getStudioDetailsById, getReviews } from '../../../service/api';
 import { useRouter } from 'next/navigation';
+import { formatHumanDateSmart, formatHumanTimeRange } from '@/app/lib/datetime';
+import ClientBackdrop from '@/app/components/ClientBackdrop';
+import LuxSpinner from '@/app/components/LuxSpinner';
 
 
 
 
 const StudioDetailsPage = () => {
+  const { locale } = useI18n();
+  const t = useT();
 
   const router = useRouter();
   const params = useParams();
   const id = params?.id; 
+
+  const toHttpsUrl = (raw: string) => {
+    const cleaned = raw.trim();
+    if (!cleaned) return "";
+    if (/^https?:\/\//i.test(cleaned)) return cleaned;
+    return `https://${cleaned}`;
+  };
+
+  const instagramUrl = (raw: string) => {
+    const cleaned = raw.trim().replace(/^@/, "");
+    if (!cleaned) return "";
+    if (/^https?:\/\//i.test(cleaned) || cleaned.includes("instagram.com")) {
+      return toHttpsUrl(cleaned);
+    }
+    return `https://instagram.com/${cleaned}`;
+  };
+
+  const youtubeUrl = (raw: string) => {
+    const cleaned = raw.trim();
+    if (!cleaned) return "";
+    if (
+      /^https?:\/\//i.test(cleaned) ||
+      cleaned.includes("youtube.com") ||
+      cleaned.includes("youtu.be")
+    ) {
+      return toHttpsUrl(cleaned);
+    }
+    return toHttpsUrl(cleaned);
+  };
 
   const [studio, setStudio] = useState<Studio_details | null>(null);
   const [loading, setLoading] = useState(true);
@@ -46,10 +83,11 @@ const StudioDetailsPage = () => {
   const [newReviewComment, setNewReviewComment] = useState('');
 
   const [userId, setUserId] = useState<string | null>(null);
+  const [artistId, setArtistId] = useState<string | null>(null);
 
   useEffect(() => {
-    const userId = localStorage.getItem("user_id");
-    setUserId(userId);
+    setUserId(localStorage.getItem("user_id"));
+    setArtistId(localStorage.getItem("artist_id"));
   }, []);
 
   // Helper function to render stars
@@ -68,24 +106,25 @@ const StudioDetailsPage = () => {
   // Function to handle adding a review
   const handleAddReview = () => {
     if (newReviewRating === 0 || newReviewComment.trim() === '') return;
+    if (!artistId) return;
     
     const newReview = {
       id: reviews.length + 1,
-      user: "You", // In a real app, this would come from user data
+      user: t('common.you'), // In a real app, this would come from user data
       rating: newReviewRating,
       comment: newReviewComment,
-      date: new Date().toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      })
+      date: new Date().toLocaleDateString(locale, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }),
     };
 
 
     
 
     const backendReview = {
-      artist_id: Number(userId),
+      artist_id: Number(artistId),
       studio_id: Number(id),
       rating: Number(newReviewRating),
       comment: newReviewComment,
@@ -106,9 +145,10 @@ const StudioDetailsPage = () => {
   const toggleFavorite = () => {
     setIsFavorite(!isFavorite);
     if(isFavorite == false){
+      if (!artistId) return;
       const favorite = { 
-        artist_id: 1, 
-        studio_id: id
+        artist_id: Number(artistId), 
+        studio_id: Number(id)
       }
 
       addFavorite(favorite);
@@ -118,30 +158,37 @@ const StudioDetailsPage = () => {
 
   // fetch studio details
   useEffect(() => {
-    if (!id) { // Handle missing id
-      setLoading(false);
-      setStudio(null);
-      return;
-    }
-    
-    const studioId = parseInt(id as string, 10); // Type assertion for TypeScript
+    let cancelled = false;
 
-    // Simulate API call
-    setTimeout(() => {
-      async function fetchStudioDetails(studioId: any) {
-        try {
-          const data = await getStudioDetailsById(studioId);
-          setStudio(data);
-          console.log("studio data is working");
-          console.log(data);
-        } catch (err) {
-          console.error(err);
-        }
+    const fetchStudioDetails = async () => {
+      if (!id) {
+        setStudio(null);
+        setLoading(true);
+        return;
       }
-      fetchStudioDetails(studioId);
-      setLoading(false);
-      setIsFavorite(Math.random() > 0.5);
-    }, 500);
+
+      setLoading(true);
+      const studioId = parseInt(id as string, 10);
+
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        const data = await getStudioDetailsById(studioId);
+        if (cancelled) return;
+        setStudio(data ?? null);
+        setIsFavorite(Math.random() > 0.5);
+      } catch (err) {
+        console.error(err);
+        if (!cancelled) setStudio(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    fetchStudioDetails();
+
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   // fetch reviews for this studio
@@ -168,23 +215,27 @@ const StudioDetailsPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+      <div className="min-h-screen relative overflow-hidden bg-gray-950 flex items-center justify-center lux-rect">
+        <ClientBackdrop />
+        <div className="relative z-10">
+          <LuxSpinner label={t('studioDetails.loadingStudio')} />
+        </div>
       </div>
     );
   }
 
   if (!studio) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 flex flex-col items-center justify-center p-4">
-        <div className="bg-gray-800/30 backdrop-blur-lg rounded-2xl p-8 text-center max-w-md">
-          <h1 className="text-2xl font-bold text-white mb-4">Studio Not Found</h1>
-          <p className="text-gray-400 mb-6">The studio you're looking for doesn't exist or has been removed.</p>
+      <div className="min-h-screen relative overflow-hidden bg-gray-950 flex flex-col items-center justify-center p-4 lux-rect">
+        <ClientBackdrop />
+        <div className="relative z-10 lux-card lux-rect p-8 text-center max-w-md">
+          <h1 className="text-2xl font-bold text-white mb-4">{t('studioDetails.notFoundTitle')}</h1>
+          <p className="text-gray-400 mb-6">{t('studioDetails.notFoundBody')}</p>
           <a 
             href="/" 
-            className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all"
+            className="lux-btn-metal inline-flex items-center justify-center px-6 py-3"
           >
-            Browse Studios
+            {t('common.browseStudios')}
           </a>
         </div>
       </div>
@@ -202,11 +253,12 @@ const StudioDetailsPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
+    <div className="min-h-screen relative overflow-hidden bg-gray-950 text-white lux-rect">
+      <ClientBackdrop />
        {/* Back Button */}
               <button 
                 onClick={() => router.back()} 
-                className="flex items-center text-gray-300 hover:text-white mb-6 pt-8 ml-5 z-50 transition-colors"
+                className="relative z-10 lux-btn-ghost inline-flex items-center mb-6 mt-8 ml-5 px-4 py-2 text-sm font-medium text-white/85"
               >
                 <FaArrowLeft className="mr-2" />
                 Back to Dashboard
@@ -218,7 +270,7 @@ const StudioDetailsPage = () => {
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${studio.coverPhoto})` }}
         >
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-gray-900">
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/35 to-gray-950">
            
           </div>
           
@@ -226,11 +278,13 @@ const StudioDetailsPage = () => {
         
         <div className="relative container mx-auto px-4 h-full flex items-end pb-8">
           <div className="flex flex-col md:flex-row items-start md:items-end gap-6">
-            <div className="bg-gray-800 border-4 border-gray-700 rounded-xl w-24 h-24 md:w-32 md:h-32 flex-shrink-0 overflow-hidden">
+            <div className="lux-card lux-rect w-24 h-24 md:w-32 md:h-32 flex-shrink-0 overflow-hidden border-white/10 bg-black/30">
               <img 
                 src={studio.avatar} 
                 alt={studio.name} 
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover lux-media"
+                loading="lazy"
+                decoding="async"
               />
             </div>
             
@@ -240,8 +294,8 @@ const StudioDetailsPage = () => {
                 {/* Favorite Button */}
                 <button 
                   onClick={toggleFavorite}
-                  className="ml-4 p-2 bg-gray-800/70 backdrop-blur-md rounded-full hover:bg-purple-900/40 transition-colors"
-                  aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                  className="ml-4 lux-btn-ghost p-2 rounded-full"
+                  aria-label={isFavorite ? t('favorites.remove') : t('favorites.add')}
                 >
                   {isFavorite ? (
                     <FaHeart className="text-xl text-purple-400" />
@@ -269,29 +323,29 @@ const StudioDetailsPage = () => {
 
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-8 ">
+      <div className="container mx-auto px-4 py-8 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column */}
           <div className="lg:col-span-2">
             {/* Tabs */}
-            <div className="flex flex-wrap gap-2 mb-6 border-b border-gray-700 pb-4">
-              {['overview', 'services', 'equipment', 'amenities', 'reviews'].map(tab => (
+            <div className="flex flex-wrap gap-2 mb-6 border-b border-white/10 pb-4">
+              {['overview', 'tour', 'services', 'equipment', 'amenities', 'reviews'].map(tab => (
                 <button
                   key={tab}
-                  className={`px-4 py-2 rounded-lg transition-all ${
-                    activeTab === tab 
-                      ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white' 
-                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                  }`}
+                  className={
+                    activeTab === tab
+                      ? 'lux-btn-metal px-4 py-2 text-sm font-medium'
+                      : 'lux-btn-ghost px-4 py-2 text-sm font-medium text-white/80'
+                  }
                   onClick={() => setActiveTab(tab)}
                 >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  {t(`studioDetails.tabs.${tab}`)}
                 </button>
               ))}
             </div>
 
             {/* Tab Content */}
-            <div className="bg-gray-800/30 backdrop-blur-lg rounded-2xl p-6 border border-gray-700/50">
+            <div className="lux-card lux-rect p-6">
               {/* Overview Tab */}
               {activeTab === 'overview' && (
                 <motion.div
@@ -299,21 +353,23 @@ const StudioDetailsPage = () => {
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <h2 className="text-2xl font-bold text-white mb-4">About {studio.name}</h2>
+                  <h2 className="text-2xl font-bold text-white mb-4">
+                    {t('studioDetails.aboutTitle', { studio: studio.name })}
+                  </h2>
                   <p className="text-gray-300 mb-6">
-                    {studio.description || "Professional recording studio with state-of-the-art equipment."}
+                    {studio.description || t('studioDetails.defaultDescription')}
                   </p>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <h3 className="text-xl font-semibold text-white mb-3 flex items-center gap-2">
-                        <FaMusic className="text-purple-400" /> Studio Types
+                        <FaMusic className="text-purple-400" /> {t('studioDetails.studioTypes')}
                       </h3>
                       <div className="flex flex-wrap gap-2">
                         {studio.types.map((type, index) => (
                           <span 
                             key={index} 
-                            className="bg-purple-900/40 text-purple-300 px-3 py-1 rounded-full text-sm"
+                            className="lux-chip border-white/10 bg-black/30 text-white/75"
                           >
                             {type}
                           </span>
@@ -323,13 +379,13 @@ const StudioDetailsPage = () => {
                     
                     <div>
                       <h3 className="text-xl font-semibold text-white mb-3 flex items-center gap-2">
-                        <FaHeadphones className="text-blue-400" /> Genres
+                        <FaHeadphones className="text-purple-400" /> {t('studioDetails.genres')}
                       </h3>
                       <div className="flex flex-wrap gap-2">
                         {studio.genres.map((genre, index) => (
                           <span 
                             key={index} 
-                            className="bg-blue-900/40 text-blue-300 px-3 py-1 rounded-full text-sm"
+                            className="lux-chip border-white/10 bg-black/30 text-white/75"
                           >
                             {genre}
                           </span>
@@ -339,13 +395,13 @@ const StudioDetailsPage = () => {
                     
                     <div>
                       <h3 className="text-xl font-semibold text-white mb-3 flex items-center gap-2">
-                        <FaCalendarAlt className="text-cyan-400" /> Availability
+                        <FaCalendarAlt className="text-blue-400" /> {t('studios.availability')}
                       </h3>
                       <div className="flex flex-wrap gap-2">
                         {studio.availability.map((day, index) => (
                           <span 
                             key={index} 
-                            className="bg-cyan-900/40 text-cyan-300 px-3 py-1 rounded-full text-sm"
+                            className="lux-chip border-white/10 bg-black/30 text-white/75"
                           >
                             {day}
                           </span>
@@ -355,13 +411,13 @@ const StudioDetailsPage = () => {
                     
                     <div>
                       <h3 className="text-xl font-semibold text-white mb-3 flex items-center gap-2">
-                        <FaLanguage className="text-yellow-400" /> Languages
+                        <FaLanguage className="lux-icon-metal" /> {t('studios.languages')}
                       </h3>
                       <div className="flex flex-wrap gap-2">
                         {studio.languages.map((lang, index) => (
                           <span 
                             key={index} 
-                            className="bg-yellow-900/40 text-yellow-300 px-3 py-1 rounded-full text-sm"
+                            className="lux-chip border-white/10 bg-black/30 text-white/75"
                           >
                             {lang}
                           </span>
@@ -372,17 +428,53 @@ const StudioDetailsPage = () => {
                   
                   {studio.rules && (
                     <div className="mt-8">
-                      <h3 className="text-xl font-semibold text-white mb-3">Studio Rules</h3>
+                      <h3 className="text-xl font-semibold text-white mb-3">{t('studioDetails.studioRules')}</h3>
                       <p className="text-gray-300">{studio.rules}</p>
                     </div>
                   )}
                   
                   {studio.cancellationPolicy && (
                     <div className="mt-6">
-                      <h3 className="text-xl font-semibold text-white mb-3">Cancellation Policy</h3>
+                      <h3 className="text-xl font-semibold text-white mb-3">{t('studioDetails.cancellationPolicy')}</h3>
                       <p className="text-gray-300">{studio.cancellationPolicy}</p>
                     </div>
                   )}
+                </motion.div>
+              )}
+
+              {/* Tour Tab */}
+              {activeTab === 'tour' && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className="flex items-center justify-between gap-4 mb-4">
+                    <div>
+                      <h2 className="text-2xl font-bold text-white">{t('tour360.title')}</h2>
+                      <p className="text-gray-400 mt-1">
+                        {t('studioDetails.tourSubtitle')}
+                      </p>
+                    </div>
+                  </div>
+
+                  <StudioTour360
+                    scenes={(() => {
+                      const scenes = studio.virtualTour?.scenes ?? [];
+                      if (scenes.length > 0) return scenes as StudioTourScene[];
+                      // Fallback: use the cover photo for an “immersive pan” experience
+                      const fallbackUrl = studio.coverPhoto || studio.avatar || '/studio/studio.jpg';
+                      return [
+                        {
+                          id: 'main-room',
+                          title: t('studioDetails.tourMainRoom'),
+                          imageUrl: fallbackUrl,
+                        },
+                      ];
+                    })()}
+                    equipment={studio.equipment ?? []}
+                    defaultSceneId={studio.virtualTour?.scenes?.[0]?.id}
+                  />
                 </motion.div>
               )}
 
@@ -393,13 +485,13 @@ const StudioDetailsPage = () => {
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <h2 className="text-2xl font-bold text-white mb-6">Services & Pricing</h2>
+                  <h2 className="text-2xl font-bold text-white mb-6">{t('studioDetails.servicesPricing')}</h2>
                   
-                  <div className="space-y-6">
+                      <div className="space-y-6">
                     {studio.services.map((service, index) => (
                       <div 
                         key={index} 
-                        className="bg-gray-900/50 p-5 rounded-xl border border-gray-700 hover:border-purple-500/30 transition-colors"
+                        className="lux-card lux-rect lux-tilt p-5"
                       >
                         <div className="flex flex-col md:flex-row justify-between gap-4">
                           <div>
@@ -438,14 +530,14 @@ const StudioDetailsPage = () => {
                             {service.maxCapacity && (
                               <div className="flex items-center gap-2 mt-1 text-gray-400 md:justify-end">
                                 <FaUserFriends />
-                                <span>Max {service.maxCapacity} people</span>
+                                <span>{t('studioDetails.maxPeople', { count: service.maxCapacity })}</span>
                               </div>
                             )}
                             
                             {service.availableTimes && (
                               <div className="mt-3">
-                                <span className="text-sm bg-blue-900/30 text-blue-300 px-2 py-1 rounded">
-                                  Available: {service.availableTimes}
+                                <span className="text-sm bg-black/30 border border-white/10 text-white/75 px-2 py-1 rounded">
+                                  Available: {formatHumanTimeRange(service.availableTimes)}
                                 </span>
                               </div>
                             )}
@@ -464,17 +556,17 @@ const StudioDetailsPage = () => {
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <h2 className="text-2xl font-bold text-white mb-6">Studio Equipment</h2>
+                  <h2 className="text-2xl font-bold text-white mb-6">{t('studioDetails.studioEquipment')}</h2>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     {studio.equipment.map((item, index) => (
                       <div 
                         key={index} 
-                        className="bg-gray-900/50 p-4 rounded-lg border border-gray-700 hover:border-cyan-500/30 transition-colors"
+                        className="lux-card lux-rect lux-tilt p-4"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="bg-cyan-900/30 p-2 rounded-lg">
-                            <FaHeadphones className="text-cyan-400" />
+                          <div className="bg-black/30 border border-white/10 p-2 rounded-lg">
+                            <FaHeadphones className="text-blue-400" />
                           </div>
                           <span className="text-white">{item}</span>
                         </div>
@@ -491,16 +583,16 @@ const StudioDetailsPage = () => {
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <h2 className="text-2xl font-bold text-white mb-6">Amenities & Facilities</h2>
+                  <h2 className="text-2xl font-bold text-white mb-6">{t('studioDetails.amenitiesFacilities')}</h2>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     {studio.amenities.map((item, index) => (
                       <div 
                         key={index} 
-                        className="bg-gray-900/50 p-4 rounded-lg border border-gray-700 hover:border-purple-500/30 transition-colors"
+                        className="lux-card lux-rect lux-tilt p-4"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="bg-purple-900/30 p-2 rounded-lg">
+                          <div className="bg-black/30 border border-white/10 p-2 rounded-lg">
                             {item === "WiFi" && <FaWifi className="text-purple-400" />}
                             {item === "Coffee" && <FaCoffee className="text-purple-400" />}
                             {item === "Parking" && <FaParking className="text-purple-400" />}
@@ -521,16 +613,16 @@ const StudioDetailsPage = () => {
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <h2 className="text-2xl font-bold text-white mb-6">Customer Reviews</h2>
+                  <h2 className="text-2xl font-bold text-white mb-6">{t('studioDetails.customerReviews')}</h2>
                   
                   {/* Add Review Form */}
-                  <div className="bg-gray-900/50 p-5 rounded-xl border border-gray-700 mb-6">
-                    <h3 className="text-lg font-semibold text-white mb-4">Add Your Review</h3>
+                  <div className="lux-card lux-rect p-5 mb-6 bg-black/20">
+                    <h3 className="text-lg font-semibold text-white mb-4">{t('studioDetails.addYourReview')}</h3>
                     
                     <div className="space-y-4">
                       {/* Rating */}
                       <div>
-                        <label className="block text-gray-400 mb-2">Your Rating</label>
+                        <label className="block text-gray-400 mb-2">{t('studioDetails.yourRating')}</label>
                         <div className="flex items-center">
                           {[1, 2, 3, 4, 5].map((star) => (
                             <button
@@ -551,13 +643,13 @@ const StudioDetailsPage = () => {
                       
                       {/* Comment */}
                       <div>
-                        <label className="block text-gray-400 mb-2">Your Review</label>
+                        <label className="block text-gray-400 mb-2">{t('studioDetails.yourReview')}</label>
                         <textarea
                           value={newReviewComment}
                           onChange={(e) => setNewReviewComment(e.target.value)}
-                          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-600"
+                          className="lux-input min-h-[110px] resize-y"
                           rows={3}
-                          placeholder="Share your experience with this studio..."
+                          placeholder={t('studioDetails.reviewPlaceholder')}
                         />
                       </div>
                       
@@ -566,10 +658,10 @@ const StudioDetailsPage = () => {
                         <button
                           type="button"
                           onClick={handleAddReview}
-                          className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-2 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all"
+                          className="lux-btn-metal px-6 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                           disabled={newReviewRating === 0 || newReviewComment.trim() === ''}
                         >
-                          Submit Review
+                          {t('studioDetails.submitReview')}
                         </button>
                       </div>
                     </div>
@@ -579,18 +671,18 @@ const StudioDetailsPage = () => {
                   <div className="space-y-6">
                     {/* User's review if exists */}
                     {userReview && (userReview.rating > 0 || userReview.comment.trim() !== '') && (
-  <div className="bg-gray-900/50 p-5 rounded-xl border border-purple-500/30 relative">
+  <div className="lux-card lux-rect p-5 relative border-purple-500/30 bg-black/20">
     <div className="absolute top-4 right-35 bg-purple-900/30 text-purple-300 px-2 py-1 rounded text-sm">
-      Your Review
+      {t('studioDetails.yourReview')}
     </div>
     <div className="flex justify-between">
       <div>
-        <h3 className="text-lg font-semibold text-white">You</h3>
+        <h3 className="text-lg font-semibold text-white">{t('common.you')}</h3>
         <div className="flex text-yellow-400 mt-1">
           {renderStars(userReview.rating)}
         </div>
       </div>
-      <span className="text-gray-500 text-sm">{userReview.date}</span>
+      <span className="text-gray-500 text-sm">{formatHumanDateSmart(userReview.date)}</span>
     </div>
     
     <p className="text-gray-300 mt-4">{userReview.comment}</p>
@@ -610,7 +702,7 @@ const StudioDetailsPage = () => {
                               {renderStars(review.rating)}
                             </div>
                           </div>
-                          <span className="text-gray-500 text-sm">{review.date}</span>
+                          <span className="text-gray-500 text-sm">{formatHumanDateSmart(review.date)}</span>
                         </div>
                         
                         <p className="text-gray-300 mt-4">{review.comment}</p>
@@ -624,14 +716,14 @@ const StudioDetailsPage = () => {
           
           {/* Right Column - Booking Card */}
           <div>
-            <div className="sticky top-24 bg-gray-800/30 backdrop-blur-lg rounded-2xl p-6 border border-gray-700/50 shadow-2xl">
+            <div className="sticky top-24 lux-card lux-rect p-6 shadow-2xl">
               <div className="flex justify-between items-start mb-6">
-                <h2 className="text-xl font-bold text-white">Booking Details</h2>
+                <h2 className="text-xl font-bold text-white">{t('studioDetails.bookingDetails')}</h2>
                 {/* Favorite button in booking card */}
                 <button 
                   onClick={toggleFavorite}
-                  className="p-2 bg-gray-700/50 backdrop-blur-md rounded-full hover:bg-purple-900/40 transition-colors"
-                  aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                  className="lux-btn-ghost p-2 rounded-full"
+                  aria-label={isFavorite ? t('favorites.remove') : t('favorites.add')}
                 >
                   {isFavorite ? (
                     <FaHeart className="text-xl text-purple-400" />
@@ -643,12 +735,17 @@ const StudioDetailsPage = () => {
               
               <div className="space-y-4">
                 <div>
-                  <h3 className="text-gray-400 text-sm mb-1">Starting Price</h3>
-                  <p className="text-2xl font-bold text-white">${studio.price} <span className="text-gray-500 text-sm font-normal">/ hour</span></p>
+                  <h3 className="text-gray-400 text-sm mb-1">{t('studioDetails.startingPrice')}</h3>
+                  <p className="text-2xl font-bold text-white">
+                    ${studio.price}{' '}
+                    <span className="text-gray-500 text-sm font-normal">
+                      {t('studioDetails.perHour')}
+                    </span>
+                  </p>
                 </div>
                 
                 <div>
-                  <h3 className="text-gray-400 text-sm mb-1">Availability</h3>
+                  <h3 className="text-gray-400 text-sm mb-1">{t('studios.availability')}</h3>
                   <div className="flex flex-wrap gap-2">
                     {studio.availability.map((day, index) => (
                       <span 
@@ -662,7 +759,7 @@ const StudioDetailsPage = () => {
                 </div>
                 
                 <div>
-                  <h3 className="text-gray-400 text-sm mb-1">Studio Types</h3>
+                  <h3 className="text-gray-400 text-sm mb-1">{t('studioDetails.studioTypes')}</h3>
                   <div className="flex flex-wrap gap-2">
                     {studio.types.map((type, index) => (
                       <span 
@@ -678,30 +775,30 @@ const StudioDetailsPage = () => {
                 <div className="pt-6">
                   <button
                     onClick={() => setShowBookingDialog(true)}
-                    className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold py-3 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all transform hover:-translate-y-0.5 shadow-lg"
+                    className="lux-btn-metal w-full py-3 font-semibold"
                   >
-                    Book Now
+                    {t('studioDetails.bookNow')}
                   </button>
                 </div>
               </div>
               
               {studio.contact && (
                 <div className="mt-8 pt-6 border-t border-gray-700">
-                  <h3 className="text-lg font-semibold text-white mb-3">Contact Information</h3>
+                  <h3 className="text-lg font-semibold text-white mb-3">{t('studioDetails.contactInformation')}</h3>
                   
                   <div className="space-y-3">
                     <div>
-                      <p className="text-gray-400 text-sm">Email</p>
+                      <p className="text-gray-400 text-sm">{t('common.email')}</p>
                       <p className="text-gray-300">{studio.contact.email}</p>
                     </div>
                     
                     <div>
-                      <p className="text-gray-400 text-sm">Phone</p>
+                      <p className="text-gray-400 text-sm">{t('common.phone')}</p>
                       <p className="text-gray-300">{studio.contact.phone}</p>
                     </div>
                     
                     <div>
-                      <p className="text-gray-400 text-sm">Website</p>
+                      <p className="text-gray-400 text-sm">{t('common.website')}</p>
                       <a 
                         href={`https://${studio.contact.website}`} 
                         className="text-blue-400 hover:underline"
@@ -715,12 +812,14 @@ const StudioDetailsPage = () => {
                     <div className="flex gap-4 mt-4">
                       {studio.contact.instagram && (
                         <a 
-                          href={`https://instagram.com/${studio.contact.instagram}`} 
+                          href={instagramUrl(studio.contact.instagram)} 
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-pink-500 hover:text-pink-400"
+                          className="lux-btn-ghost inline-flex items-center justify-center h-10 w-10 rounded-full border border-white/10 bg-black/25 hover:bg-white/5"
+                          aria-label={t('common.instagram')}
                         >
-                          Instagram
+                          <FaInstagram className="text-xl text-[#E1306C]" />
+                          <span className="sr-only">{t('common.instagram')}</span>
                         </a>
                       )}
                       
@@ -731,18 +830,20 @@ const StudioDetailsPage = () => {
                           rel="noopener noreferrer"
                           className="text-orange-500 hover:text-orange-400"
                         >
-                          SoundCloud
+                          {t('common.soundcloud')}
                         </a>
                       )}
                       
                       {studio.contact.youtube && (
                         <a 
-                          href={`https://${studio.contact.youtube}`} 
+                          href={youtubeUrl(studio.contact.youtube)} 
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-red-500 hover:text-red-400"
+                          className="lux-btn-ghost inline-flex items-center justify-center h-10 w-10 rounded-full border border-white/10 bg-black/25 hover:bg-white/5"
+                          aria-label={t('common.youtube')}
                         >
-                          YouTube
+                          <FaYoutube className="text-xl text-[#FF0000]" />
+                          <span className="sr-only">{t('common.youtube')}</span>
                         </a>
                       )}
                     </div>
@@ -764,12 +865,12 @@ const StudioDetailsPage = () => {
       )}
 
       {/* Fixed Book Now Button (Mobile) */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-gray-800/90 backdrop-blur-sm border-t border-gray-700 p-4">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-black/65 backdrop-blur-xl border-t border-white/10 p-4">
         <div className="flex items-center justify-between">
           <button 
             onClick={toggleFavorite}
-            className="p-3 bg-gray-700/50 backdrop-blur-md rounded-full hover:bg-purple-900/40 transition-colors"
-            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+            className="lux-btn-ghost p-3 rounded-full"
+            aria-label={isFavorite ? t('favorites.remove') : t('favorites.add')}
           >
             {isFavorite ? (
               <FaHeart className="text-xl text-purple-400" />
@@ -777,12 +878,12 @@ const StudioDetailsPage = () => {
               <FaRegHeart className="text-xl text-gray-400" />
             )}
           </button>
-          <button
+                <button
             onClick={() => setShowBookingDialog(true)}
-            className="flex-1 ml-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold py-3 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all"
-          >
-            Book Now
-          </button>
+                  className="lux-btn-metal flex-1 ml-4 py-3 font-semibold"
+                >
+                  {t('studioDetails.bookNow')}
+                </button>
         </div>
       </div>
     </div>

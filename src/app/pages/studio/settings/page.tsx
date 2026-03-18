@@ -782,7 +782,7 @@ export default function SettingsPage() {
   };
 
   return ( 
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white p-4 sm:p-6 md:p-8">
+    <div className="relative py-6 px-4 sm:px-6 md:px-8">
       <div className="max-w-6xl mx-auto">
         {/* Back Button */}
         <button 
@@ -800,7 +800,7 @@ export default function SettingsPage() {
                   
           {/* Modern Tab Navigation */}
           <div className="m-auto">
-            <div className="relative bg-gray-800/50 backdrop-blur-lg rounded-full p-1 border border-gray-500 border-t-white/30 border-l-white/30 shadow-2xl overflow-x-auto">
+            <div className="lux-card lux-rect p-1 shadow-2xl bg-black/35 border-white/10 rounded-full backdrop-blur-lg overflow-x-auto">
               <div className="flex space-x-1 min-w-max">
                 {tabs.map((tab) => (
                   <button

@@ -3,10 +3,12 @@ import { Fragment, useState } from 'react';
 import { Menu, Transition } from '@headlessui/react';
 import Link from 'next/link';
 import { logout } from '@/app/pages/auth/service/api';
+import { useT } from '@/app/i18n/useT';
 // import { signOut } from 'next-auth/react';
 
 const ArtistProfileDropdown = ({ artistProfile }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const t = useT();
 
   const signout = async () => {
     logout().catch(() => null);
@@ -61,44 +63,44 @@ const ArtistProfileDropdown = ({ artistProfile }) => {
           </div>
 
           {/* Menu Items */}
-          <Menu.Item>
-            {({ active }) => (
-              <Link
-                href="profile/manage-profile"
+           <Menu.Item>
+             {({ active }) => (
+               <Link
+                href="/pages/client/profile/manage-profile"
                 className={`${
                   active ? 'bg-gray-700 font-special-regular' : ''
                 } block px-4 py-2 text-sm text-gray-300 font-special-regular`}
-              >
-                Manage Profile
-              </Link>
-            )}
-          </Menu.Item>
+               >
+                {t('common.manageProfile')}
+               </Link>
+             )}
+           </Menu.Item>
 
           <Menu.Item>
             {({ active }) => (
               <Link
-                href="profile/profile-preview"
+                href="/pages/client/profile/profile-preview"
                 className={`${
                   active ? 'bg-gray-700 font-special-regular' : ''
                 } block px-4 py-2 text-sm text-gray-300 font-special-regular`}
-              >
-                Profile Preview
-              </Link>
-            )}
-          </Menu.Item>
+               >
+                {t('common.profilePreview')}
+               </Link>
+             )}
+           </Menu.Item>
           
           <Menu.Item>
             {({ active }) => (
               <Link
-                href="settings"
+                href="/pages/client/settings"
                 className={`${
                   active ? 'bg-gray-700 font-special-regular' : ''
                 } block px-4 py-2 text-sm text-gray-300 font-special-regular`}
-              >
-                Settings
-              </Link>
-            )}
-          </Menu.Item>
+               >
+                {t('common.settings')}
+               </Link>
+             )}
+           </Menu.Item>
           
           <Menu.Item>
             {({ active }) => (
@@ -107,11 +109,11 @@ const ArtistProfileDropdown = ({ artistProfile }) => {
                 className={`${
                   active ? 'bg-gray-700 font-special-regular' : ''
                 } block px-4 py-2 text-sm text-gray-300 font-special-regular`}
-              >
-                Help & Support
-              </Link>
-            )}
-          </Menu.Item>
+               >
+                {t('common.helpSupport')}
+               </Link>
+             )}
+           </Menu.Item>
           
           <div className="border-t border-gray-700 my-1" />
           
@@ -122,12 +124,12 @@ const ArtistProfileDropdown = ({ artistProfile }) => {
                 type="button"
                 className={`${
                   active ? 'bg-gray-700 font-special-regular' : ''
-                } block w-full text-left px-4 py-2 text-sm text-red-500  font-special-regular`}
-              >
-                Log Out
-              </button>
-            )}
-          </Menu.Item>
+                 } block w-full text-left px-4 py-2 text-sm text-red-500  font-special-regular`}
+               >
+                {t('common.logOut')}
+               </button>
+             )}
+           </Menu.Item>
         </Menu.Items>
       </Transition>
     </Menu>

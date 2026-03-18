@@ -1,6 +1,6 @@
 // components/PointsSection.jsx
 import { useState, useEffect } from 'react';
-import { getGamificationData } from '../pages/client/service/api';
+import { getArtistGamificationData } from '../pages/client/service/api';
 
 const PointsSection = () => {
   const [gamificationData, setGamificationData] = useState(null);
@@ -39,7 +39,18 @@ const PointsSection = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const data = await getGamificationData(101);
+        const rawId =
+          typeof window !== "undefined"
+            ? (localStorage.getItem("artist_id") ||
+              localStorage.getItem("user_id") ||
+              localStorage.getItem("id"))
+            : null;
+        const artistId = rawId ? Number(rawId) : null;
+        if (!artistId || Number.isNaN(artistId)) {
+          throw new Error("Missing artist id (please log in again).");
+        }
+
+        const data = await getArtistGamificationData(artistId);
         setGamificationData(data);
       } catch (err) {
         setError(err.message);
@@ -53,7 +64,7 @@ const PointsSection = () => {
 
   if (loading) {
     return (
-      <div className="bg-gray-800/30 backdrop-blur-lg rounded-2xl border border-gray-500 border-t-white/30 border-l-white/30 p-6 md:p-8 shadow-2xl">
+      <div className="lux-card lux-rect p-6 md:p-8 shadow-2xl">
         <div className="animate-pulse">
           <div className="h-8 bg-gray-700 rounded w-1/3 mb-4"></div>
           <div className="h-4 bg-gray-700 rounded w-2/3 mb-8"></div>
@@ -73,7 +84,7 @@ const PointsSection = () => {
 
   if (error) {
     return (
-      <div className="bg-gray-800/30 backdrop-blur-lg rounded-2xl border border-gray-500 border-t-white/30 border-l-white/30 p-6 md:p-8 shadow-2xl">
+      <div className="lux-card lux-rect p-6 md:p-8 shadow-2xl">
         <div className="text-red-400 text-center py-8">Error: {error}</div>
       </div>
     );
@@ -81,13 +92,14 @@ const PointsSection = () => {
 
   if (!gamificationData) {
     return (
-      <div className="bg-gray-800/30 backdrop-blur-lg rounded-2xl border border-gray-500 border-t-white/30 border-l-white/30 p-6 md:p-8 shadow-2xl">
+      <div className="lux-card lux-rect p-6 md:p-8 shadow-2xl">
         <div className="text-white text-center py-8">No gamification data found</div>
       </div>
     );
   }
 
-  const { points, normal_level, xp_level, perks, rewards } = gamificationData;
+  const { points, normal_level, xp_level, perks, rewards, bookings_last6 } = gamificationData;
+  const bookingsLast6 = Number(bookings_last6) || 0;
   
   // Find current normal level
   const currentNormalLevel = normalLevels.find(level => level.level === normal_level) || normalLevels[0];
@@ -99,7 +111,7 @@ const PointsSection = () => {
   
   // Calculate progress to next levels
   const normalProgress = nextNormalLevel 
-    ? ((points - currentNormalLevel.minBookings) / (nextNormalLevel.minBookings - currentNormalLevel.minBookings)) * 100
+    ? ((bookingsLast6 - currentNormalLevel.minBookings) / (nextNormalLevel.minBookings - currentNormalLevel.minBookings)) * 100
     : 100;
     
   const xpProgress = nextXpLevel
@@ -107,12 +119,12 @@ const PointsSection = () => {
     : 100;
 
   return (
-    <div className="bg-gray-800/30 backdrop-blur-lg rounded-2xl border border-gray-500 border-t-white/30 border-l-white/30 p-6 md:p-8 shadow-2xl">
+    <div className="lux-card lux-rect p-6 md:p-8 shadow-2xl">
       <h2 className="text-2xl font-bold text-white mb-2 font-special-regular">My Gamification Progress</h2>
       <p className="text-gray-400 mb-8 font-special-regular">Earn points for every booking and unlock rewards</p>
       
       {/* Points Summary */}
-      <div className="bg-gray-900 rounded-xl p-6 mb-8">
+      <div className="lux-card lux-rect p-6 mb-8 bg-black/25">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="text-center">
             <div className="text-5xl font-bold text-yellow-400 font-special-regular">{points}</div>
@@ -152,7 +164,7 @@ const PointsSection = () => {
           </div>
           {nextNormalLevel ? (
             <div className="text-right text-sm text-gray-400 font-special-regular">
-              {nextNormalLevel.minBookings - points} points to next level
+              {Math.max(0, nextNormalLevel.minBookings - bookingsLast6)} bookings to next level
             </div>
           ) : (
             <div className="text-right text-sm text-yellow-400 font-special-regular">
@@ -191,7 +203,7 @@ const PointsSection = () => {
       {/* Current Perks & Rewards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {/* Perks */}
-        <div className="bg-gray-900 rounded-xl p-6">
+        <div className="lux-card lux-rect p-6 bg-black/25">
           <h3 className="text-lg font-semibold text-white mb-4 font-special-regular">Your Perks</h3>
           {perks && perks.length > 0 ? (
             <ul className="space-y-2">
@@ -210,7 +222,7 @@ const PointsSection = () => {
         </div>
         
         {/* Rewards */}
-        <div className="bg-gray-900 rounded-xl p-6">
+        <div className="lux-card lux-rect p-6 bg-black/25">
           <h3 className="text-lg font-semibold text-white mb-4 font-special-regular">Your Rewards</h3>
           {rewards && rewards.length > 0 ? (
             <ul className="space-y-2">
@@ -232,10 +244,10 @@ const PointsSection = () => {
       {/* Level Information */}
       <div className="mb-8">
         <h3 className="text-xl font-semibold text-white mb-4 font-special-regular">Level Information</h3>
-        <div className="bg-gray-900 rounded-xl overflow-hidden">
+        <div className="lux-card lux-rect overflow-hidden bg-black/25">
           <div className="grid grid-cols-1 md:grid-cols-2">
             {/* Normal Levels */}
-            <div className="p-4 border-r border-gray-800">
+            <div className="p-4 border-r border-white/10">
               <h4 className="text-lg font-semibold text-blue-400 mb-4 font-special-regular">Normal Levels</h4>
               <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
                 {normalLevels.map(level => (
@@ -243,8 +255,8 @@ const PointsSection = () => {
                     key={level.level} 
                     className={`p-4 rounded-lg ${
                       level.level === normal_level 
-                        ? 'bg-blue-900/30 border border-blue-500' 
-                        : 'bg-gray-800/30'
+                        ? 'bg-black/35 border border-white/18 shadow-[0_0_22px_rgba(207,210,218,0.12)]' 
+                        : 'bg-black/20 border border-white/10'
                     }`}
                   >
                     <div className="flex justify-between items-start">
@@ -256,7 +268,7 @@ const PointsSection = () => {
                         <p className="text-sm text-yellow-400 mt-2 font-special-regular">Perk: {level.perks}</p>
                       </div>
                       {level.level === normal_level && (
-                        <span className="px-2 py-1 rounded-full text-xs bg-blue-900 text-blue-300 font-special-regular">
+                        <span className="px-2 py-1 rounded-full text-xs bg-black/35 border border-white/10 text-white/80 font-special-regular">
                           Current
                         </span>
                       )}

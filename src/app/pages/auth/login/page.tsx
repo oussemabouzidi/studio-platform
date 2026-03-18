@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation';
 import { FaGoogle, FaFacebookF, FaArrowRight, FaGithub, FaApple, FaEnvelope, FaLock } from 'react-icons/fa';
 import { AuroraBackground } from '@/app/components/aurora-background';
 import {login} from '../service/api'
+import { useT } from '@/app/i18n/useT';
 
 export default function LoginPage() {
+  const t = useT();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +30,7 @@ export default function LoginPage() {
       console.log(res);
 
       if (!res?.success) {
-        setError(res?.error || "Invalid credentials.");
+        setError(res?.error || t("auth.invalidCredentials"));
         return;
       }
 
@@ -48,7 +50,7 @@ export default function LoginPage() {
         router.push("/pages/studio/dashboard");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed.");
+      setError(err instanceof Error ? err.message : t("auth.loginFailed"));
     }
   };
 
@@ -77,9 +79,9 @@ export default function LoginPage() {
                         relative before:absolute before:inset-0 before:bg-gradient-to-br before:from-gray-500/10 before:to-white/5 before:rounded-3xl before:-z-10">
           <div className="text-center mb-6">
             <h1 className="text-3xl md:text-4xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-400 font-special">
-              Welcome Back
+              {t("auth.welcomeBack")}
             </h1>
-            <p className="text-blue-200 text-sm md:text-base font-special-regular ">Sign in to continue your creative journey</p>
+            <p className="text-blue-200 text-sm md:text-base font-special-regular ">{t("auth.signInSubtitle")}</p>
           </div>
 
           {/* Enhanced Social Login Buttons */}
@@ -104,7 +106,7 @@ export default function LoginPage() {
           {/* Divider */}
           <div className="flex items-center mb-6">
             <div className="flex-1 border-t border-white/10"></div>
-            <span className="px-3 text-gray-400 text-xs md:text-sm font-special-regular">or continue with email</span>
+            <span className="px-3 text-gray-400 text-xs md:text-sm font-special-regular">{t("auth.orContinueWithEmail")}</span>
             <div className="flex-1 border-t border-white/10"></div>
           </div>
 
@@ -117,7 +119,7 @@ export default function LoginPage() {
             ) : null}
             {/* Email Input */}
             <div>
-              <label className="block text-blue-200 mb-1 text-xs md:text-sm font-special-regular">Email Address</label>
+              <label className="block text-blue-200 mb-1 text-xs md:text-sm font-special-regular">{t("auth.emailAddress")}</label>
               <div className="relative">
                 <input
                   type="email"
@@ -135,7 +137,7 @@ export default function LoginPage() {
 
             {/* Password Input */}
             <div>
-              <label className="block text-blue-200 mb-1 text-xs md:text-sm font-special-regular">Password</label>
+              <label className="block text-blue-200 mb-1 text-xs md:text-sm font-special-regular">{t("auth.password")}</label>
               <div className="relative">
                 <input
                   type="password"
@@ -158,11 +160,11 @@ export default function LoginPage() {
                   type="checkbox"
                   className="form-checkbox rounded bg-blue-900/30 border-blue-500/30 text-blue-400 focus:ring-blue-400 h-4 w-4"
                 />
-                <span className="ml-2 text-blue-200 font-special-regular">Remember me</span>
+                <span className="ml-2 text-blue-200 font-special-regular">{t("auth.rememberMe")}</span>
               </label>
-              
+               
               <a href="#" className="text-blue-300 hover:text-blue-200 transition-colors font-special-regular">
-                Forgot password?
+                {t("auth.forgotPassword")}
               </a>
             </div>
 
@@ -171,18 +173,18 @@ export default function LoginPage() {
               onClick={handleSignIn}
               className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium rounded-lg  transition-all duration-200 shadow flex items-center justify-center gap-2 mt-4 text-sm md:text-base font-special"
             >
-              Sign In <FaArrowRight className="text-sm" />
+              {t("auth.signIn")} <FaArrowRight className="text-sm" />
             </button>
 
             {/* Create Account */}
             <div className="text-center pt-4 border-t border-blue-500/20 mt-4">
               <p className="text-blue-300 text-sm font-special-regular">
-                Don't have an account?{' '}
+                {t("auth.noAccount")}{' '}
                 <button 
                   onClick={handleCreateAccount}
                   className="text-blue-200 hover:text-white font-medium transition-colors"
                 >
-                  Create Account
+                  {t("auth.createAccount")}
                 </button>
               </p>
             </div>

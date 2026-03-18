@@ -1,7 +1,12 @@
 // components/FilterPanel.jsx
 import { useState } from 'react';
+import { useI18n } from '@/app/i18n/I18nProvider';
+import { useT } from '@/app/i18n/useT';
 
 const FilterPanel = ({ filters, onChange, onReset, studios }) => {
+  const { locale } = useI18n();
+  const t = useT();
+
   // Extract unique values for filters from studios data
   const allGenres = [...new Set(studios.flatMap(studio => studio.genres))];
   const allServices = [...new Set(studios.flatMap(studio => studio.types))];
@@ -9,6 +14,17 @@ const FilterPanel = ({ filters, onChange, onReset, studios }) => {
   const allEquipment = [...new Set(studios.flatMap(studio => studio.equipment))];
   const allLanguages = [...new Set(studios.flatMap(studio => studio.languages))];
   const allAvailability = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  const availabilityLabel = (code) => {
+    const map = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 0 };
+    const day = map[code] ?? 0;
+    const base = new Date(Date.UTC(2023, 0, 1 + day)); // 2023-01-01 is Sunday
+    try {
+      return new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(base);
+    } catch {
+      return code;
+    }
+  };
   
   // State for collapsible sections
   const [openSections, setOpenSections] = useState({
@@ -33,12 +49,12 @@ const FilterPanel = ({ filters, onChange, onReset, studios }) => {
   return (
     <div className="bg-gray-900 rounded-xl p-4 shadow-lg">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold text-white">Filters</h3>
+        <h3 className="text-lg font-semibold text-white">{t('studios.filtersTitle')}</h3>
         <button 
           onClick={onReset}
           className="text-sm text-purple-400 hover:text-purple-300"
         >
-          Reset All
+          {t('studios.resetAll')}
         </button>
       </div>
       
@@ -49,7 +65,7 @@ const FilterPanel = ({ filters, onChange, onReset, studios }) => {
             className="flex justify-between items-center w-full text-left text-white mb-2"
             onClick={() => toggleSection('location')}
           >
-            <span>Location</span>
+            <span>{t('studios.location')}</span>
             <svg 
               xmlns="http://www.w3.org/2000/svg" 
               className={`h-5 w-5 transition-transform ${openSections.location ? 'rotate-180' : ''}`} 
@@ -64,7 +80,7 @@ const FilterPanel = ({ filters, onChange, onReset, studios }) => {
             <div className="mt-2">
               <input
                 type="text"
-                placeholder="City or state..."
+                placeholder={t('studios.cityOrStatePlaceholder')}
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg py-2 px-3 text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-600 focus:border-transparent"
                 value={filters.location}
                 onChange={(e) => onChange('location', e.target.value)}
@@ -79,7 +95,7 @@ const FilterPanel = ({ filters, onChange, onReset, studios }) => {
             className="flex justify-between items-center w-full text-left text-white mb-2"
             onClick={() => toggleSection('genre')}
           >
-            <span>Genre</span>
+            <span>{t('studios.genre')}</span>
             <svg 
               xmlns="http://www.w3.org/2000/svg" 
               className={`h-5 w-5 transition-transform ${openSections.genre ? 'rotate-180' : ''}`} 
@@ -94,7 +110,7 @@ const FilterPanel = ({ filters, onChange, onReset, studios }) => {
             <div className="mt-2">
               <input
                 type="text"
-                placeholder="Search genres..."
+                placeholder={t('studios.searchGenresPlaceholder')}
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg py-2 px-3 text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-600 focus:border-transparent mb-2"
                 value={filters.genre}
                 onChange={(e) => onChange('genre', e.target.value)}
@@ -125,7 +141,7 @@ const FilterPanel = ({ filters, onChange, onReset, studios }) => {
             className="flex justify-between items-center w-full text-left text-white mb-2"
             onClick={() => toggleSection('availability')}
           >
-            <span>Availability</span>
+            <span>{t('studios.availability')}</span>
             <svg 
               xmlns="http://www.w3.org/2000/svg" 
               className={`h-5 w-5 transition-transform ${openSections.availability ? 'rotate-180' : ''}`} 
@@ -153,7 +169,7 @@ const FilterPanel = ({ filters, onChange, onReset, studios }) => {
                     onChange('availability', newAvailability);
                   }}
                 >
-                  {day}
+                  {availabilityLabel(day)}
                 </button>
               ))}
             </div>
@@ -166,7 +182,7 @@ const FilterPanel = ({ filters, onChange, onReset, studios }) => {
             className="flex justify-between items-center w-full text-left text-white mb-2"
             onClick={() => toggleSection('services')}
           >
-            <span>Services</span>
+            <span>{t('studios.services')}</span>
             <svg 
               xmlns="http://www.w3.org/2000/svg" 
               className={`h-5 w-5 transition-transform ${openSections.services ? 'rotate-180' : ''}`} 
@@ -208,7 +224,7 @@ const FilterPanel = ({ filters, onChange, onReset, studios }) => {
             className="flex justify-between items-center w-full text-left text-white mb-2"
             onClick={() => toggleSection('amenities')}
           >
-            <span>Amenities</span>
+            <span>{t('studios.amenities')}</span>
             <svg 
               xmlns="http://www.w3.org/2000/svg" 
               className={`h-5 w-5 transition-transform ${openSections.amenities ? 'rotate-180' : ''}`} 
@@ -250,7 +266,7 @@ const FilterPanel = ({ filters, onChange, onReset, studios }) => {
             className="flex justify-between items-center w-full text-left text-white mb-2"
             onClick={() => toggleSection('price')}
           >
-            <span>Price Range</span>
+            <span>{t('studios.priceRange')}</span>
             <svg 
               xmlns="http://www.w3.org/2000/svg" 
               className={`h-5 w-5 transition-transform ${openSections.price ? 'rotate-180' : ''}`} 
@@ -290,7 +306,7 @@ const FilterPanel = ({ filters, onChange, onReset, studios }) => {
             className="flex justify-between items-center w-full text-left text-white mb-2"
             onClick={() => toggleSection('equipment')}
           >
-            <span>Equipment</span>
+            <span>{t('studios.equipment')}</span>
             <svg 
               xmlns="http://www.w3.org/2000/svg" 
               className={`h-5 w-5 transition-transform ${openSections.equipment ? 'rotate-180' : ''}`} 
@@ -332,7 +348,7 @@ const FilterPanel = ({ filters, onChange, onReset, studios }) => {
             className="flex justify-between items-center w-full text-left text-white mb-2"
             onClick={() => toggleSection('studioType')}
           >
-            <span>Studio Type</span>
+            <span>{t('studios.studioType')}</span>
             <svg 
               xmlns="http://www.w3.org/2000/svg" 
               className={`h-5 w-5 transition-transform ${openSections.studioType ? 'rotate-180' : ''}`} 
@@ -374,7 +390,7 @@ const FilterPanel = ({ filters, onChange, onReset, studios }) => {
             className="flex justify-between items-center w-full text-left text-white mb-2"
             onClick={() => toggleSection('languages')}
           >
-            <span>Languages</span>
+            <span>{t('studios.languages')}</span>
             <svg 
               xmlns="http://www.w3.org/2000/svg" 
               className={`h-5 w-5 transition-transform ${openSections.languages ? 'rotate-180' : ''}`} 

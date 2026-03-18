@@ -24,6 +24,11 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { SettingsData } from '../../studio/types';
 import { getSettings, updateSettings } from '../service/api';
 import { useRouter } from 'next/navigation';
+import ClientBackdrop from '@/app/components/ClientBackdrop';
+import { formatHumanDate } from '@/app/lib/datetime';
+import { useI18n } from '@/app/i18n/I18nProvider';
+import { LOCALE_LABELS, SUPPORTED_LOCALES, type Locale } from '@/app/i18n/locales';
+import { useT } from '@/app/i18n/useT';
 
 type PaymentMethod = {
   id: number;
@@ -89,6 +94,8 @@ const defaultSettings: ExtendedSettingsData = {
 };
 
 export default function SettingsPage() {
+  const { locale, setLocale } = useI18n();
+  const t = useT();
   const [activeTab, setActiveTab] = useState('billing');
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
@@ -96,6 +103,13 @@ export default function SettingsPage() {
   const [settingsData, setSettingsData] = useState<ExtendedSettingsData>(defaultSettings);
 
   const [showSuccess, setShowSuccess] = useState(false);
+
+  useEffect(() => {
+    setSettingsData((prev) => ({
+      ...prev,
+      regionalSettings: { ...prev.regionalSettings, language: locale },
+    }));
+  }, [locale]);
 
   useEffect(() => {
     async function fetchSettings() {
@@ -192,13 +206,13 @@ export default function SettingsPage() {
   };
 
   const tabs = [
-    { id: 'billing', label: 'Billing', icon: <FaCreditCard className="mr-2" /> },
-    { id: 'account', label: 'Account', icon: <FaUser className="mr-2" /> },
-    { id: 'notifications', label: 'Notifications', icon: <FaBell className="mr-2" /> },
-    { id: 'privacy', label: 'Privacy', icon: <FaEye className="mr-2" /> },
-    { id: 'security', label: 'Security', icon: <FaLock className="mr-2" /> },
-    { id: 'regional', label: 'Language & Region', icon: <FaGlobe className="mr-2" /> },
-    { id: 'help', label: 'Help', icon: <FaQuestionCircle className="mr-2" /> },
+    { id: 'billing', label: t('settings.tabs.billing'), icon: <FaCreditCard className="mr-2" /> },
+    { id: 'account', label: t('settings.tabs.account'), icon: <FaUser className="mr-2" /> },
+    { id: 'notifications', label: t('settings.tabs.notifications'), icon: <FaBell className="mr-2" /> },
+    { id: 'privacy', label: t('settings.tabs.privacy'), icon: <FaEye className="mr-2" /> },
+    { id: 'security', label: t('settings.tabs.security'), icon: <FaLock className="mr-2" /> },
+    { id: 'regional', label: t('settings.tabs.regional'), icon: <FaGlobe className="mr-2" /> },
+    { id: 'help', label: t('settings.tabs.help'), icon: <FaQuestionCircle className="mr-2" /> },
   ];
 
   const renderContent = () => {
@@ -206,37 +220,41 @@ export default function SettingsPage() {
       case 'billing':
         return (
           <div className="space-y-6">
-            <div className="bg-gray-800/60 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-gray-700">
+            <div className="lux-card lux-rect p-4 sm:p-6">
               <h3 className={`text-lg sm:text-xl font-bold mb-4 flex items-center ${specialGothic.className}`}>
-                <FaCreditCard className="mr-3 text-purple-400" /> Payment Methods
+                <FaCreditCard className="mr-3 text-purple-400" /> {t('settings.billing.paymentMethodsTitle')}
               </h3>
               
               <div className="mb-6">
                 {settingsData.paymentMethods.map(method => (
-                  <div key={method.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 mb-3 bg-gray-700/50 rounded-xl border border-gray-600">
+                  <div key={method.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 mb-3 bg-black/25 rounded-xl border border-white/10">
                     <div className="flex items-center mb-2 sm:mb-0">
-                      <div className="bg-gray-600 p-2 sm:p-3 rounded-lg mr-3 sm:mr-4">
+                      <div className="bg-black/30 border border-white/10 p-2 sm:p-3 rounded-lg mr-3 sm:mr-4">
                         <FaCreditCard className="text-xl sm:text-2xl" />
                       </div>
                       <div>
                         <h4 className="font-semibold text-sm sm:text-base">{method.type} ****{method.last4}</h4>
-                        <p className="text-gray-400 text-xs sm:text-sm">Expires {method.expiry}</p>
+                        <p className="text-gray-400 text-xs sm:text-sm">
+                          {t('settings.billing.expiresValue', { expiry: method.expiry })}
+                        </p>
                       </div>
                     </div>
                     <div className="flex space-x-2 sm:space-x-3 self-end sm:self-auto">
                       {method.primary ? (
-                        <span className="px-2 sm:px-3 py-1 bg-purple-900/30 text-purple-400 rounded-full text-xs sm:text-sm">Primary</span>
+                        <span className="px-2 sm:px-3 py-1 bg-black/30 border border-white/10 text-white/80 rounded-full text-xs sm:text-sm">
+                          {t('settings.billing.primary')}
+                        </span>
                       ) : (
                         <button 
                           onClick={() => makePrimaryPaymentMethod(method.id)}
-                          className="px-2 sm:px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded-full text-xs sm:text-sm transition-colors"
+                          className="lux-btn-ghost px-2 sm:px-3 py-1 text-xs sm:text-sm transition-colors"
                         >
-                          Make Primary
+                          {t('settings.billing.makePrimary')}
                         </button>
                       )}
                       <button 
                         onClick={() => deletePaymentMethod(method.id)}
-                        className="p-1 sm:p-2 bg-gray-700 hover:bg-red-500/20 rounded-full text-red-400 transition-colors"
+                        className="p-1 sm:p-2 bg-black/30 border border-white/10 hover:border-red-500/30 rounded-full text-red-300 transition-colors"
                       >
                         <FaTrash className="text-sm sm:text-base" />
                       </button>
@@ -245,35 +263,35 @@ export default function SettingsPage() {
                 ))}
               </div>
               
-              <button className={`w-full py-2 sm:py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-full transition-all duration-300 font-bold ${specialGothic.className} flex items-center justify-center text-sm sm:text-base`}>
-                <span className="mr-2">+</span> Add Payment Method
+              <button className={`w-full py-2 sm:py-3 lux-btn-metal transition-all duration-300 font-bold ${specialGothic.className} flex items-center justify-center text-sm sm:text-base`}>
+                <span className="mr-2">+</span> {t('settings.billing.addPaymentMethod')}
               </button>
             </div>
             
-            <div className="bg-gray-800/60 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-gray-700">
+            <div className="lux-card lux-rect p-4 sm:p-6">
               <h3 className={`text-lg sm:text-xl font-bold mb-4 flex items-center ${specialGothic.className}`}>
-                <FaHistory className="mr-3 text-green-400" /> Payment History
+                <FaHistory className="mr-3 text-green-400" /> {t('settings.billing.paymentHistoryTitle')}
               </h3>
               
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[500px]">
                   <thead>
-                    <tr className="border-b border-gray-700">
-                      <th className="py-2 sm:py-3 px-2 sm:px-4 text-left text-xs sm:text-sm">Date</th>
-                      <th className="py-2 sm:py-3 px-2 sm:px-4 text-left text-xs sm:text-sm">Studio</th>
-                      <th className="py-2 sm:py-3 px-2 sm:px-4 text-left text-xs sm:text-sm">Amount</th>
-                      <th className="py-2 sm:py-3 px-2 sm:px-4 text-left text-xs sm:text-sm">Invoice</th>
+                    <tr className="border-b border-white/10">
+                      <th className="py-2 sm:py-3 px-2 sm:px-4 text-left text-xs sm:text-sm">{t('settings.billing.table.date')}</th>
+                      <th className="py-2 sm:py-3 px-2 sm:px-4 text-left text-xs sm:text-sm">{t('settings.billing.table.studio')}</th>
+                      <th className="py-2 sm:py-3 px-2 sm:px-4 text-left text-xs sm:text-sm">{t('settings.billing.table.amount')}</th>
+                      <th className="py-2 sm:py-3 px-2 sm:px-4 text-left text-xs sm:text-sm">{t('settings.billing.table.invoice')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {settingsData.invoices.map(invoice => (
-                      <tr key={invoice.id} className="border-b border-gray-700/50 hover:bg-gray-700/30">
-                        <td className="py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm">{invoice.date}</td>
+                      <tr key={invoice.id} className="border-b border-white/10 hover:bg-white/5">
+                        <td className="py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm">{formatHumanDate(invoice.date)}</td>
                         <td className="py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm">{invoice.studio}</td>
                         <td className="py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm">${invoice.amount.toFixed(2)}</td>
                         <td className="py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm">
                           <button className="text-blue-400 hover:text-blue-300 flex items-center text-xs sm:text-sm">
-                            <FaReceipt className="mr-1" /> Download
+                            <FaReceipt className="mr-1" /> {t('settings.billing.download')}
                           </button>
                         </td>
                       </tr>
@@ -288,16 +306,16 @@ export default function SettingsPage() {
       case 'account':
         return (
           <div className="space-y-6">
-            <div className="bg-gray-800/60 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-gray-700">
+            <div className="lux-card lux-rect p-4 sm:p-6">
               <h3 className={`text-lg sm:text-xl font-bold mb-4 flex items-center ${specialGothic.className}`}>
-                <FaLink className="mr-3 text-purple-400" /> Connected Accounts
+                <FaLink className="mr-3 text-purple-400" /> {t('settings.account.connectedAccountsTitle')}
               </h3>
               
               <div className="space-y-4">
                 {settingsData.connectedAccounts.map(account => (
-                  <div key={account.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 bg-gray-700/50 rounded-xl border border-gray-600">
+                  <div key={account.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 bg-black/25 rounded-xl border border-white/10">
                     <div className="flex items-center mb-2 sm:mb-0">
-                      <div className="bg-gray-600 p-2 sm:p-3 rounded-lg mr-3 sm:mr-4">
+                      <div className="bg-black/30 border border-white/10 p-2 sm:p-3 rounded-lg mr-3 sm:mr-4">
                         {account.provider === 'Google' ? (
                           <span className="text-white font-bold text-sm sm:text-base">G</span>
                         ) : (
@@ -307,37 +325,45 @@ export default function SettingsPage() {
                       <div>
                         <h4 className="font-semibold text-sm sm:text-base">{account.provider}</h4>
                         <p className="text-gray-400 text-xs sm:text-sm">
-                          {account.connected ? 'Connected' : 'Not connected'}
+                          {account.connected ? t('settings.account.connected') : t('settings.account.notConnected')}
                         </p>
                       </div>
                     </div>
                     <button 
                       onClick={() => toggleAccountConnection(account.id)}
-                      className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full flex items-center text-xs sm:text-sm ${
+                      className={`px-3 sm:px-4 py-1.5 sm:py-2 flex items-center text-xs sm:text-sm ${
                         account.connected 
-                          ? 'bg-gray-700 hover:bg-gray-600 text-red-400' 
-                          : 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white'
-                      } transition-colors self-end sm:self-auto`}
-                    >
-                      {account.connected ? <><FaUnlink className="mr-1 sm:mr-2" /> Disconnect</> : <><FaLink className="mr-1 sm:mr-2" /> Connect</>}
+                          ? 'lux-btn-ghost text-red-300 hover:text-red-200 border-red-500/20 hover:border-red-500/30' 
+                          : 'lux-btn-metal'
+                    } transition-colors self-end sm:self-auto`}
+                  >
+                      {account.connected ? (
+                        <>
+                          <FaUnlink className="mr-1 sm:mr-2" /> {t('settings.account.disconnect')}
+                        </>
+                      ) : (
+                        <>
+                          <FaLink className="mr-1 sm:mr-2" /> {t('settings.account.connect')}
+                        </>
+                      )}
                     </button>
                   </div>
                 ))}
               </div>
             </div>
             
-            <div className="bg-gray-800/60 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-gray-700">
+            <div className="lux-card lux-rect p-4 sm:p-6">
               <h3 className={`text-lg sm:text-xl font-bold mb-4 flex items-center ${specialGothic.className}`}>
-                <FaLock className="mr-3 text-yellow-400" /> Change Password
+                <FaLock className="mr-3 text-yellow-400" /> {t('settings.account.changePasswordTitle')}
               </h3>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div className="sm:col-span-2 md:col-span-1">
-                  <label className="block text-xs sm:text-sm mb-2">Current Password</label>
+                  <label className="block text-xs sm:text-sm mb-2">{t('settings.account.currentPassword')}</label>
                   <div className="relative">
                     <input 
                       type={showPassword ? "text" : "password"} 
-                      className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-600 text-sm sm:text-base"
+                      className="lux-input pr-10 text-sm sm:text-base"
                     />
                     <button 
                       className="absolute right-3 top-2.5 text-gray-400 hover:text-white"
@@ -349,28 +375,28 @@ export default function SettingsPage() {
                 </div>
                 
                 <div className="sm:col-span-2 md:col-span-1">
-                  <label className="block text-xs sm:text-sm mb-2">New Password</label>
+                  <label className="block text-xs sm:text-sm mb-2">{t('settings.account.newPassword')}</label>
                   <div className="relative">
                     <input 
                       type={showPassword ? "text" : "password"} 
-                      className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-600 text-sm sm:text-base"
+                      className="lux-input text-sm sm:text-base"
                     />
                   </div>
                 </div>
                 
                 <div className="sm:col-span-2 md:col-span-1">
-                  <label className="block text-xs sm:text-sm mb-2">Confirm New Password</label>
+                  <label className="block text-xs sm:text-sm mb-2">{t('settings.account.confirmNewPassword')}</label>
                   <div className="relative">
                     <input 
                       type={showPassword ? "text" : "password"} 
-                      className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-600 text-sm sm:text-base"
+                      className="lux-input text-sm sm:text-base"
                     />
                   </div>
                 </div>
                 
                 <div className="flex items-end sm:col-span-2 md:col-span-1">
-                  <button className={`w-full py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-all duration-300 font-bold text-sm sm:text-base ${specialGothic.className}`}>
-                    Update Password
+                  <button className={`w-full py-2.5 lux-btn-metal transition-all duration-300 font-bold text-sm sm:text-base ${specialGothic.className}`}>
+                    {t('settings.account.updatePassword')}
                   </button>
                 </div>
               </div>
@@ -381,48 +407,48 @@ export default function SettingsPage() {
       case 'notifications':
         return (
           <div className="space-y-6">
-            <div className="bg-gray-800/60 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-gray-700">
+            <div className="lux-card lux-rect p-4 sm:p-6">
               <h3 className={`text-lg sm:text-xl font-bold mb-4 sm:mb-6 flex items-center ${specialGothic.className}`}>
-                <FaBell className="mr-3 text-yellow-400" /> Notification Preferences
+                <FaBell className="mr-3 text-yellow-400" /> {t('settings.notifications.title')}
               </h3>
               
               <div className="space-y-4 sm:space-y-6">
-                <div className="bg-gray-700/50 p-3 sm:p-5 rounded-xl border border-gray-600">
-                  <h4 className="font-bold text-base sm:text-lg mb-3 sm:mb-4">Booking Confirmations</h4>
+                <div className="bg-black/25 p-3 sm:p-5 rounded-xl border border-white/10">
+                  <h4 className="font-bold text-base sm:text-lg mb-3 sm:mb-4">{t('settings.notifications.bookingConfirmations')}</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                     <NotificationToggle 
-                      label="Email"
+                      label={t('settings.notifications.channels.email')}
                       checked={settingsData.notifications.bookingConfirmation.email}
                       onChange={() => toggleNotification('bookingConfirmation', 'email')}
                     />
                     <NotificationToggle 
-                      label="SMS"
+                      label={t('settings.notifications.channels.sms')}
                       checked={settingsData.notifications.bookingConfirmation.sms}
                       onChange={() => toggleNotification('bookingConfirmation', 'sms')}
                     />
                     <NotificationToggle 
-                      label="Push Notification"
+                      label={t('settings.notifications.channels.push')}
                       checked={settingsData.notifications.bookingConfirmation.push}
                       onChange={() => toggleNotification('bookingConfirmation', 'push')}
                     />
                   </div>
                 </div>
                 
-                <div className="bg-gray-700/50 p-3 sm:p-5 rounded-xl border border-gray-600">
-                  <h4 className="font-bold text-base sm:text-lg mb-3 sm:mb-4">Booking Reminders</h4>
+                <div className="bg-black/25 p-3 sm:p-5 rounded-xl border border-white/10">
+                  <h4 className="font-bold text-base sm:text-lg mb-3 sm:mb-4">{t('settings.notifications.bookingReminders')}</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                     <NotificationToggle 
-                      label="Email"
+                      label={t('settings.notifications.channels.email')}
                       checked={settingsData.notifications.bookingReminder.email}
                       onChange={() => toggleNotification('bookingReminder', 'email')}
                     />
                     <NotificationToggle 
-                      label="SMS"
+                      label={t('settings.notifications.channels.sms')}
                       checked={settingsData.notifications.bookingReminder.sms}
                       onChange={() => toggleNotification('bookingReminder', 'sms')}
                     />
                     <NotificationToggle 
-                      label="Push Notification"
+                      label={t('settings.notifications.channels.push')}
                       checked={settingsData.notifications.bookingReminder.push}
                       onChange={() => toggleNotification('bookingReminder', 'push')}
                     />
@@ -436,19 +462,19 @@ export default function SettingsPage() {
       case 'privacy':
         return (
           <div className="space-y-6">
-            <div className="bg-gray-800/60 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-gray-700">
+            <div className="lux-card lux-rect p-4 sm:p-6">
               <h3 className={`text-lg sm:text-xl font-bold mb-4 sm:mb-6 flex items-center ${specialGothic.className}`}>
-                <FaEye className="mr-3 text-purple-400" /> Privacy Settings
+                <FaEye className="mr-3 text-purple-400" /> {t('settings.privacy.title')}
               </h3>
               
               <div className="space-y-4 sm:space-y-6">
-                <div className="bg-gray-700/50 p-3 sm:p-5 rounded-xl border border-gray-600">
-                  <h4 className="font-bold text-base sm:text-lg mb-3 sm:mb-4">Profile Visibility</h4>
+                <div className="bg-black/25 p-3 sm:p-5 rounded-xl border border-white/10">
+                  <h4 className="font-bold text-base sm:text-lg mb-3 sm:mb-4">{t('settings.privacy.profileVisibilityTitle')}</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                     <PrivacyOption 
                       value="public"
-                      label="Public"
-                      description="Visible to everyone"
+                      label={t('settings.privacy.visibility.public.label')}
+                      description={t('settings.privacy.visibility.public.description')}
                       selected={settingsData.privacySettings.profileVisibility === 'public'}
                       onChange={() => setSettingsData(prev => ({
                         ...prev,
@@ -460,8 +486,8 @@ export default function SettingsPage() {
                     />
                     <PrivacyOption 
                       value="studios"
-                      label="Studios Only"
-                      description="Visible only to studios"
+                      label={t('settings.privacy.visibility.studios.label')}
+                      description={t('settings.privacy.visibility.studios.description')}
                       selected={settingsData.privacySettings.profileVisibility === 'studios'}
                       onChange={() => setSettingsData(prev => ({
                         ...prev,
@@ -473,8 +499,8 @@ export default function SettingsPage() {
                     />
                     <PrivacyOption 
                       value="private"
-                      label="Private"
-                      description="Only visible to you"
+                      label={t('settings.privacy.visibility.private.label')}
+                      description={t('settings.privacy.visibility.private.description')}
                       selected={settingsData.privacySettings.profileVisibility === 'private'}
                       onChange={() => setSettingsData(prev => ({
                         ...prev,
@@ -487,13 +513,13 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 
-                <div className="bg-gray-700/50 p-3 sm:p-5 rounded-xl border border-gray-600">
-                  <h4 className="font-bold text-base sm:text-lg mb-3 sm:mb-4">Content Visibility</h4>
+                <div className="bg-black/25 p-3 sm:p-5 rounded-xl border border-white/10">
+                  <h4 className="font-bold text-base sm:text-lg mb-3 sm:mb-4">{t('settings.privacy.contentVisibilityTitle')}</h4>
                   
-                  <div className="flex items-center justify-between p-3 sm:p-4 mb-3 bg-gray-800 rounded-lg">
+                  <div className="flex items-center justify-between p-3 sm:p-4 mb-3 bg-black/25 rounded-lg border border-white/10">
                     <div>
-                      <h5 className="font-semibold text-sm sm:text-base">Show Reviews Publicly</h5>
-                      <p className="text-gray-400 text-xs sm:text-sm">Allow others to see your studio reviews</p>
+                      <h5 className="font-semibold text-sm sm:text-base">{t('settings.privacy.showReviewsTitle')}</h5>
+                      <p className="text-gray-400 text-xs sm:text-sm">{t('settings.privacy.showReviewsDescription')}</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input 
@@ -520,17 +546,17 @@ export default function SettingsPage() {
       case 'security':
         return (
           <div className="space-y-6">
-            <div className="bg-gray-800/60 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-gray-700">
+            <div className="lux-card lux-rect p-4 sm:p-6">
               <h3 className={`text-lg sm:text-xl font-bold mb-4 sm:mb-6 flex items-center ${specialGothic.className}`}>
-                <FaLock className="mr-3 text-yellow-400" /> Security Settings
+                <FaLock className="mr-3 text-yellow-400" /> {t('settings.security.title')}
               </h3>
               
               <div className="space-y-4 sm:space-y-6">
-                <div className="bg-gray-700/50 p-3 sm:p-5 rounded-xl border border-gray-600">
+                <div className="bg-black/25 p-3 sm:p-5 rounded-xl border border-white/10">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h4 className="font-bold text-base sm:text-lg mb-1">Two-Factor Authentication (2FA)</h4>
-                      <p className="text-gray-400 text-xs sm:text-sm">Add an extra layer of security to your account</p>
+                      <h4 className="font-bold text-base sm:text-lg mb-1">{t('settings.security.twoFactorTitle')}</h4>
+                      <p className="text-gray-400 text-xs sm:text-sm">{t('settings.security.twoFactorDescription')}</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input 
@@ -544,27 +570,37 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 
-                <div className="bg-gray-700/50 p-3 sm:p-5 rounded-xl border border-gray-600">
-                  <h4 className="font-bold text-base sm:text-lg mb-3 sm:mb-4">Active Sessions</h4>
+                <div className="bg-black/25 p-3 sm:p-5 rounded-xl border border-white/10">
+                  <h4 className="font-bold text-base sm:text-lg mb-3 sm:mb-4">{t('settings.security.activeSessionsTitle')}</h4>
                   
                   <div className="space-y-3">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-gray-800 rounded-lg">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-black/25 rounded-lg border border-white/10">
                       <div className="mb-2 sm:mb-0">
-                        <h5 className="font-semibold text-sm sm:text-base">Chrome on Windows</h5>
-                        <p className="text-gray-400 text-xs sm:text-sm">New York, USA • Last active: Today at 10:30 AM</p>
+                        <h5 className="font-semibold text-sm sm:text-base">{t('settings.security.sessions.chromeOnWindows')}</h5>
+                        <p className="text-gray-400 text-xs sm:text-sm">
+                          New York, USA •{' '}
+                          {t('settings.security.sessions.lastActive', {
+                            when: t('settings.security.sessions.todayAt', { time: '10:30 AM' }),
+                          })}
+                        </p>
                       </div>
                       <div className="flex items-center self-end sm:self-auto">
-                        <span className="text-green-400 text-xs sm:text-sm mr-2 sm:mr-3">Current session</span>
+                        <span className="text-green-400 text-xs sm:text-sm mr-2 sm:mr-3">{t('settings.security.sessions.current')}</span>
                         <button className="text-red-400 hover:text-red-300">
                           <FaSignOutAlt className="text-sm sm:text-base" />
                         </button>
                       </div>
                     </div>
                     
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-gray-800 rounded-lg">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-black/25 rounded-lg border border-white/10">
                       <div className="mb-2 sm:mb-0">
-                        <h5 className="font-semibold text-sm sm:text-base">Safari on iPhone</h5>
-                        <p className="text-gray-400 text-xs sm:text-sm">Los Angeles, USA • Last active: Yesterday at 4:15 PM</p>
+                        <h5 className="font-semibold text-sm sm:text-base">{t('settings.security.sessions.safariOnIphone')}</h5>
+                        <p className="text-gray-400 text-xs sm:text-sm">
+                          Los Angeles, USA •{' '}
+                          {t('settings.security.sessions.lastActive', {
+                            when: t('settings.security.sessions.yesterdayAt', { time: '4:15 PM' }),
+                          })}
+                        </p>
                       </div>
                       <button className="text-red-400 hover:text-red-300 self-end sm:self-auto">
                         <FaSignOutAlt className="text-sm sm:text-base" />
@@ -572,8 +608,8 @@ export default function SettingsPage() {
                     </div>
                   </div>
                   
-                  <button className={`mt-4 w-full py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors font-bold text-sm sm:text-base ${specialGothic.className} flex items-center justify-center`}>
-                    <FaSignOutAlt className="mr-2" /> Log Out From All Devices
+                  <button className={`mt-4 w-full py-2.5 lux-btn-metal transition-colors font-bold text-sm sm:text-base ${specialGothic.className} flex items-center justify-center`}>
+                    <FaSignOutAlt className="mr-2" /> {t('settings.security.logOutAllDevices')}
                   </button>
                 </div>
               </div>
@@ -584,37 +620,41 @@ export default function SettingsPage() {
       case 'regional':
         return (
           <div className="space-y-6">
-            <div className="bg-gray-800/60 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-gray-700">
+            <div className="lux-card lux-rect p-4 sm:p-6">
               <h3 className={`text-lg sm:text-xl font-bold mb-4 sm:mb-6 flex items-center ${specialGothic.className}`}>
-                <FaGlobe className="mr-3 text-blue-400" /> Language & Regional Settings
+                <FaGlobe className="mr-3 text-blue-400" /> {t('settings.regional.title')}
               </h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                <div className="bg-gray-700/50 p-3 sm:p-5 rounded-xl border border-gray-600">
-                  <h4 className="font-bold text-base sm:text-lg mb-3 sm:mb-4">Language</h4>
+                <div className="bg-black/25 p-3 sm:p-5 rounded-xl border border-white/10">
+                  <h4 className="font-bold text-base sm:text-lg mb-3 sm:mb-4">{t('common.language')}</h4>
                   <select 
-                    className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-600 text-sm sm:text-base"
+                    className="lux-input text-sm sm:text-base"
                     value={settingsData.regionalSettings.language}
-                    onChange={(e) => setSettingsData(prev => ({
-                      ...prev,
-                      regionalSettings: {
-                        ...prev.regionalSettings,
-                        language: e.target.value
-                      }
-                    }))}
+                    onChange={(e) => {
+                      const nextLocale = e.target.value as Locale;
+                      setSettingsData((prev) => ({
+                        ...prev,
+                        regionalSettings: {
+                          ...prev.regionalSettings,
+                          language: nextLocale,
+                        },
+                      }));
+                      void setLocale(nextLocale);
+                    }}
                   >
-                    <option value="en">English</option>
-                    <option value="es">Spanish</option>
-                    <option value="fr">French</option>
-                    <option value="de">German</option>
-                    <option value="ja">Japanese</option>
+                    {SUPPORTED_LOCALES.map((l) => (
+                      <option key={l} value={l}>
+                        {LOCALE_LABELS[l]}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 
-                <div className="bg-gray-700/50 p-3 sm:p-5 rounded-xl border border-gray-600">
-                  <h4 className="font-bold text-base sm:text-lg mb-3 sm:mb-4">Timezone</h4>
+                <div className="bg-black/25 p-3 sm:p-5 rounded-xl border border-white/10">
+                  <h4 className="font-bold text-base sm:text-lg mb-3 sm:mb-4">{t('settings.regional.timezoneTitle')}</h4>
                   <select 
-                    className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-600 text-sm sm:text-base"
+                    className="lux-input text-sm sm:text-base"
                     value={settingsData.regionalSettings.timezone}
                     onChange={(e) => setSettingsData(prev => ({
                       ...prev,
@@ -624,19 +664,19 @@ export default function SettingsPage() {
                       }
                     }))}
                   >
-                    <option value="America/New_York">Eastern Time (US & Canada)</option>
-                    <option value="America/Chicago">Central Time (US & Canada)</option>
-                    <option value="America/Los_Angeles">Pacific Time (US & Canada)</option>
-                    <option value="Europe/London">London</option>
-                    <option value="Europe/Paris">Paris</option>
-                    <option value="Asia/Tokyo">Tokyo</option>
+                    <option value="America/New_York">{t('settings.regional.timezones.americaNewYork')}</option>
+                    <option value="America/Chicago">{t('settings.regional.timezones.americaChicago')}</option>
+                    <option value="America/Los_Angeles">{t('settings.regional.timezones.americaLosAngeles')}</option>
+                    <option value="Europe/London">{t('settings.regional.timezones.europeLondon')}</option>
+                    <option value="Europe/Paris">{t('settings.regional.timezones.europeParis')}</option>
+                    <option value="Asia/Tokyo">{t('settings.regional.timezones.asiaTokyo')}</option>
                   </select>
                 </div>
                 
-                <div className="bg-gray-700/50 p-3 sm:p-5 rounded-xl border border-gray-600">
-                  <h4 className="font-bold text-base sm:text-lg mb-3 sm:mb-4">Currency</h4>
+                <div className="bg-black/25 p-3 sm:p-5 rounded-xl border border-white/10">
+                  <h4 className="font-bold text-base sm:text-lg mb-3 sm:mb-4">{t('settings.regional.currencyTitle')}</h4>
                   <select 
-                    className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-600 text-sm sm:text-base"
+                    className="lux-input text-sm sm:text-base"
                     value={settingsData.regionalSettings.currency}
                     onChange={(e) => setSettingsData(prev => ({
                       ...prev,
@@ -646,20 +686,20 @@ export default function SettingsPage() {
                       }
                     }))}
                   >
-                    <option value="USD">US Dollar (USD)</option>
-                    <option value="EUR">Euro (EUR)</option>
-                    <option value="GBP">British Pound (GBP)</option>
-                    <option value="JPY">Japanese Yen (JPY)</option>
-                    <option value="CAD">Canadian Dollar (CAD)</option>
-                    <option value="AUD">Australian Dollar (AUD)</option>
+                    <option value="USD">{t('settings.regional.currencies.usd')}</option>
+                    <option value="EUR">{t('settings.regional.currencies.eur')}</option>
+                    <option value="GBP">{t('settings.regional.currencies.gbp')}</option>
+                    <option value="JPY">{t('settings.regional.currencies.jpy')}</option>
+                    <option value="CAD">{t('settings.regional.currencies.cad')}</option>
+                    <option value="AUD">{t('settings.regional.currencies.aud')}</option>
                   </select>
                 </div>
                 
-                <div className="bg-gray-700/50 p-3 sm:p-5 rounded-xl border border-gray-600">
-                  <h4 className="font-bold text-base sm:text-lg mb-3 sm:mb-4">Time Format</h4>
+                <div className="bg-black/25 p-3 sm:p-5 rounded-xl border border-white/10">
+                  <h4 className="font-bold text-base sm:text-lg mb-3 sm:mb-4">{t('settings.regional.timeFormatTitle')}</h4>
                   <div className="flex space-x-3 sm:space-x-4">
                     <button 
-                      className={`flex-1 py-2 rounded-lg text-xs sm:text-sm ${settingsData.regionalSettings.timeFormat === '12h' ? 'bg-purple-600 text-white' : 'bg-gray-800 hover:bg-gray-700'}`}
+                      className={`flex-1 py-2 text-xs sm:text-sm ${settingsData.regionalSettings.timeFormat === '12h' ? 'lux-btn-metal' : 'lux-btn-ghost'}`}
                       onClick={() => setSettingsData(prev => ({
                         ...prev,
                         regionalSettings: {
@@ -668,10 +708,10 @@ export default function SettingsPage() {
                         }
                       }))}
                     >
-                      12-hour
+                      {t('settings.regional.timeFormat.twelveHour')}
                     </button>
                     <button 
-                      className={`flex-1 py-2 rounded-lg text-xs sm:text-sm ${settingsData.regionalSettings.timeFormat === '24h' ? 'bg-purple-600 text-white' : 'bg-gray-800 hover:bg-gray-700'}`}
+                      className={`flex-1 py-2 text-xs sm:text-sm ${settingsData.regionalSettings.timeFormat === '24h' ? 'lux-btn-metal' : 'lux-btn-ghost'}`}
                       onClick={() => setSettingsData(prev => ({
                         ...prev,
                         regionalSettings: {
@@ -680,7 +720,7 @@ export default function SettingsPage() {
                         }
                       }))}
                     >
-                      24-hour
+                      {t('settings.regional.timeFormat.twentyFourHour')}
                     </button>
                   </div>
                 </div>
@@ -692,42 +732,42 @@ export default function SettingsPage() {
       case 'help':
         return (
           <div className="space-y-6">
-            <div className="bg-gray-800/60 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-gray-700">
+            <div className="lux-card lux-rect p-4 sm:p-6">
               <h3 className={`text-lg sm:text-xl font-bold mb-4 sm:mb-6 flex items-center ${specialGothic.className}`}>
-                <FaQuestionCircle className="mr-3 text-yellow-400" /> Help & Support
+                <FaQuestionCircle className="mr-3 text-yellow-400" /> {t('common.helpSupport')}
               </h3>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
                 <div className="bg-gradient-to-br from-purple-900/30 to-blue-900/30 p-4 sm:p-6 rounded-xl border border-purple-500/30 hover:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] transition-all">
-                  <div className="bg-gray-700/50 p-2 sm:p-3 rounded-full w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center mb-3 sm:mb-4">
+                  <div className="bg-black/30 border border-white/10 p-2 sm:p-3 rounded-full w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center mb-3 sm:mb-4">
                     <FaQuestionCircle className="text-lg sm:text-xl" />
                   </div>
-                  <h4 className="font-bold text-base sm:text-lg mb-2">Knowledge Base</h4>
-                  <p className="text-gray-400 text-xs sm:text-sm mb-3 sm:mb-4">Find answers to common questions in our extensive help center.</p>
+                  <h4 className="font-bold text-base sm:text-lg mb-2">{t('settings.help.knowledgeBaseTitle')}</h4>
+                  <p className="text-gray-400 text-xs sm:text-sm mb-3 sm:mb-4">{t('settings.help.knowledgeBaseDescription')}</p>
                   <button className={`px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-all duration-300 font-bold text-xs sm:text-sm ${specialGothic.className}`}>
-                    Browse FAQs
+                    {t('settings.help.browseFaqs')}
                   </button>
                 </div>
                 
                 <div className="bg-gradient-to-br from-purple-900/30 to-blue-900/30 p-4 sm:p-6 rounded-xl border border-purple-500/30 hover:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] transition-all">
-                  <div className="bg-gray-700/50 p-2 sm:p-3 rounded-full w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center mb-3 sm:mb-4">
+                  <div className="bg-black/30 border border-white/10 p-2 sm:p-3 rounded-full w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center mb-3 sm:mb-4">
                     <FaCalendarAlt className="text-lg sm:text-xl" />
                   </div>
-                  <h4 className="font-bold text-base sm:text-lg mb-2">Contact Support</h4>
-                  <p className="text-gray-400 text-xs sm:text-sm mb-3 sm:mb-4">Reach out to our support team for personalized assistance.</p>
+                  <h4 className="font-bold text-base sm:text-lg mb-2">{t('settings.help.contactSupportTitle')}</h4>
+                  <p className="text-gray-400 text-xs sm:text-sm mb-3 sm:mb-4">{t('settings.help.contactSupportDescription')}</p>
                   <button className={`px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-all duration-300 font-bold text-xs sm:text-sm ${specialGothic.className}`}>
-                    Get Help
+                    {t('settings.help.getHelp')}
                   </button>
                 </div>
                 
                 <div className="bg-gradient-to-br from-purple-900/30 to-blue-900/30 p-4 sm:p-6 rounded-xl border border-purple-500/30 hover:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] transition-all">
-                  <div className="bg-gray-700/50 p-2 sm:p-3 rounded-full w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center mb-3 sm:mb-4">
+                  <div className="bg-black/30 border border-white/10 p-2 sm:p-3 rounded-full w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center mb-3 sm:mb-4">
                     <FaReceipt className="text-lg sm:text-xl" />
                   </div>
-                  <h4 className="font-bold text-base sm:text-lg mb-2">Report an Issue</h4>
-                  <p className="text-gray-400 text-xs sm:text-sm mb-3 sm:mb-4">Report bugs, studio issues, or platform concerns.</p>
+                  <h4 className="font-bold text-base sm:text-lg mb-2">{t('settings.help.reportIssueTitle')}</h4>
+                  <p className="text-gray-400 text-xs sm:text-sm mb-3 sm:mb-4">{t('settings.help.reportIssueDescription')}</p>
                   <button className={`px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-all duration-300 font-bold text-xs sm:text-sm ${specialGothic.className}`}>
-                    Submit Report
+                    {t('settings.help.submitReport')}
                   </button>
                 </div>
               </div>
@@ -741,33 +781,34 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white p-4 sm:p-6 md:p-8">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen relative overflow-hidden bg-gray-950 text-white p-4 sm:p-6 md:p-8 lux-rect">
+      <ClientBackdrop />
+      <div className="relative z-10 max-w-6xl mx-auto">
         {/* Back Button */}
         <button 
           onClick={() => router.back()} 
-          className="flex items-center text-gray-300 hover:text-white mb-4 sm:mb-6 transition-colors"
+          className="lux-btn-ghost inline-flex items-center mb-4 sm:mb-6 px-4 py-2 text-sm font-medium text-white/85"
         >
           <FaArrowLeft className="mr-2" />
-          Back to Dashboard
+          {t('profile.backToDashboard')}
         </button>
         
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 md:mb-8">
           <h1 className={`text-2xl sm:text-3xl md:text-4xl font-bold ${specialGothic.className} mb-4 md:mb-0`}>
-            Account Settings
+            {t('settings.title')}
           </h1>
           
           {/* Modern Tab Navigation */}
           <div className="w-full md:w-auto">
-            <div className="relative bg-gray-800/50 backdrop-blur-lg rounded-full p-1 border border-gray-500 border-t-white/30 border-l-white/30 shadow-2xl overflow-x-auto">
+            <div className="lux-card lux-rect p-1 shadow-2xl overflow-x-auto bg-black/35 border-white/10">
               <div className="flex space-x-1 min-w-max">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
-                    className={`relative px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-special transition-colors duration-300 z-10 ${
+                    className={`relative px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-special transition-colors duration-300 z-10 ${
                       activeTab === tab.id
                         ? 'text-white drop-shadow-[0_0_8px_rgba(147,51,234,0.8)]'
-                        : 'text-white hover:text-blue'
+                        : 'text-white/60 hover:text-white'
                     }`}
                     onClick={() => setActiveTab(tab.id)}
                   >
@@ -777,7 +818,7 @@ export default function SettingsPage() {
                     </div>
                     {activeTab === tab.id && (
                       <motion.div
-                        className="absolute inset-0 rounded-full bg-purple-600/40 backdrop-blur-3xl"
+                        className="absolute inset-0 rounded-xl bg-white/6 backdrop-blur-3xl border border-white/10 shadow-[0_0_22px_rgba(207,210,218,0.12)]"
                         layoutId="activeTab"
                         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                       />
@@ -790,7 +831,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Tab Content */}
-        <div className="bg-gray-800/50 backdrop-blur-lg rounded-2xl border border-gray-700 overflow-hidden">
+        <div className="lux-card lux-rect overflow-hidden">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
@@ -809,7 +850,7 @@ export default function SettingsPage() {
           <button className={`bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 sm:px-16 py-3 sm:py-4 rounded-full font-bold transition-all duration-300 text-sm sm:text-base ${specialGothic.className}`}
             onClick={save}
           >
-            Save
+            {t('common.save')}
           </button>
         </div>
       </div>
@@ -824,7 +865,7 @@ export default function SettingsPage() {
             className="fixed top-4 sm:top-8 right-4 sm:right-8 transform bg-gradient-to-r from-green-600 to-green-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full shadow-lg flex items-center space-x-2 backdrop-blur-sm z-50"
           >
             <FaCheckCircle className="text-lg sm:text-xl" />
-            <span className="font-semibold text-sm sm:text-base">Settings saved successfully!</span>
+            <span className="font-semibold text-sm sm:text-base">{t('settings.savedSuccessfully')}</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -840,7 +881,7 @@ type NotificationToggleProps = {
 
 // Helper component for notification toggles
 const NotificationToggle = ({ label, checked, onChange }: NotificationToggleProps) => (
-  <div className="flex items-center justify-between p-3 sm:p-4 bg-gray-800 rounded-lg">
+  <div className="flex items-center justify-between p-3 sm:p-4 bg-black/25 rounded-lg border border-white/10">
     <span className="text-sm sm:text-base">{label}</span>
     <label className="relative inline-flex items-center cursor-pointer">
       <input 
@@ -868,7 +909,7 @@ const PrivacyOption = ({ value, label, description, selected, onChange }: Privac
     className={`p-3 sm:p-4 rounded-lg cursor-pointer transition-all ${
       selected 
         ? 'bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/30 hover:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)]' 
-        : 'bg-gray-800 hover:bg-gray-700'
+        : 'bg-black/25 border border-white/10 hover:bg-white/5'
     }`}
     onClick={onChange}
   >

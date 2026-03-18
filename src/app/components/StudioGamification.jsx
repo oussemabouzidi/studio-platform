@@ -1,6 +1,6 @@
 // components/StudioGamification.jsx
 import { useState, useEffect } from 'react';
-import { getGamificationData } from '../pages/client/service/api';
+import { getStudioGamificationData } from '../pages/client/service/api';
 
 
 const StudioGamification = ({ studioId }) => {
@@ -23,10 +23,10 @@ const StudioGamification = ({ studioId }) => {
   ];
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchData = async (resolvedId) => {
       try {
         setLoading(true);
-        const data = await getGamificationData(studioId);
+        const data = await getStudioGamificationData(resolvedId);
         setGamificationData(data);
       } catch (err) {
         setError(err.message);
@@ -35,9 +35,23 @@ const StudioGamification = ({ studioId }) => {
       }
     };
 
-    if (studioId) {
-      fetchData();
+    const rawStudioId =
+      typeof window !== "undefined" ? localStorage.getItem("studio_id") : null;
+    const idFromStorage = rawStudioId ? Number(rawStudioId) : NaN;
+
+    const resolvedStudioId =
+      studioId && !Number.isNaN(Number(studioId))
+        ? Number(studioId)
+        : !Number.isNaN(idFromStorage)
+          ? idFromStorage
+          : null;
+
+    if (!resolvedStudioId) {
+      setLoading(false);
+      return;
     }
+
+    fetchData(resolvedStudioId);
   }, [studioId]);
 
   if (loading) {
@@ -68,7 +82,8 @@ const StudioGamification = ({ studioId }) => {
     );
   }
 
-  const { points, normal_level, perks } = gamificationData;
+  const { points, normal_level, perks, bookings_last6 } = gamificationData;
+  const bookingsLast6 = Number(bookings_last6) || 0;
   
   // Find current normal level
   const currentNormalLevel = normalLevels.find(level => level.level === normal_level) || normalLevels[0];
@@ -76,7 +91,7 @@ const StudioGamification = ({ studioId }) => {
   
   // Calculate progress to next level
   const normalProgress = nextNormalLevel 
-    ? ((points - currentNormalLevel.minBookings) / (nextNormalLevel.minBookings - currentNormalLevel.minBookings)) * 100
+    ? ((bookingsLast6 - currentNormalLevel.minBookings) / (nextNormalLevel.minBookings - currentNormalLevel.minBookings)) * 100
     : 100;
 
   return (
@@ -117,7 +132,7 @@ const StudioGamification = ({ studioId }) => {
         </div>
         {nextNormalLevel ? (
           <div className="text-right text-sm text-gray-400 font-special-regular">
-            {nextNormalLevel.minBookings - points} points to next level
+            {Math.max(0, nextNormalLevel.minBookings - bookingsLast6)} bookings to next level
           </div>
         ) : (
           <div className="text-right text-sm text-yellow-400 font-special-regular">

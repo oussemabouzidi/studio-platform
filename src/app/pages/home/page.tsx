@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import React, { useState, useEffect } from 'react';
 import { FaSearch, FaCalendarAlt, FaMusic, FaMapMarkerAlt, FaInstagram, FaTwitter, FaFacebookF, FaYoutube, FaStar, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { 
@@ -9,10 +9,13 @@ import {
 } from 'react-icons/fa';
 
 import { useRouter } from 'next/navigation';
+import BackgroundAudioToggle from '@/app/components/BackgroundAudioToggle';
+import { useT } from '@/app/i18n/useT';
 
 
 
 export default function HomePage() {
+  const t = useT();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -46,25 +49,25 @@ export default function HomePage() {
       name: "Echo Sound Studios",
       location: "Brooklyn, NY",
       rating: 4.9,
-      image: "/studio1.jpg"
+      image: "/studio/cover.jpg"
     },
     {
       name: "Harmony Records",
       location: "Los Angeles, CA",
       rating: 4.8,
-      image: "/studio2.jpg"
+      image: "/studio/cover2.jpg"
     },
     {
       name: "Urban Beats Lab",
       location: "Chicago, IL",
       rating: 4.7,
-      image: "/studio3.jpg"
+      image: "/studio/cover.jpg"
     },
     {
       name: "Vintage Vinyl Studio",
       location: "Nashville, TN",
       rating: 4.9,
-      image: "/studio4.jpg"
+      image: "/studio/cover2.jpg"
     }
   ];
 
@@ -99,27 +102,14 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      {/* Background Video */}
-      <div className="absolute inset-0 z-0 overflow-hidden">
-        <div className="bg-black/70 absolute inset-0 z-10"></div>
-        <video 
-          autoPlay 
-          loop 
-          muted 
-          playsInline 
-          className="w-full h-full object-cover"
-        >
-          <source src="/vedio/recording.mp4" type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
-      </div>
+    <div className="min-h-screen bg-gray-950 text-white relative overflow-hidden lux-rect">
+      <BackgroundAudioToggle />
 
       {/* Navbar */}
-      <nav className={`fixed w-full h-20 z-50 transition-all duration-300  ${isScrolled ? 'bg-gray-900/90 backdrop-blur-2xl bg-opacity-50 py-2' : 'bg-transparent  py-4'}`}>
+      <nav className={`fixed w-full h-20 z-50 transition-all duration-300  ${isScrolled ? 'bg-black/70 backdrop-blur-2xl border-b border-white/10 py-2' : 'bg-transparent  py-4'}`}>
         <div className=" mr-8 ml-8 px-4  flex justify-between items-center">
           <div className="flex items-center h-20 w-20">
-              <img src="/home/Logo.png" />
+              <img src="/home/Logo.png" alt="Audio Alchemic" />
 
     </div>
           {/* Desktop Menu */}
@@ -132,7 +122,7 @@ export default function HomePage() {
               }}
               className={`hover:text-purple-400 transition-colors font-special `}
             >
-              Studios
+              {t("home.navStudios")}
             </a>
             <a
               href="#how-it-works"
@@ -142,7 +132,7 @@ export default function HomePage() {
               }}
               className={`hover:text-purple-400 transition-colors font-special `}
             >
-              How It Works ?
+              {t("home.navHowItWorks")}
             </a>
             <a
               href="#contact"
@@ -152,13 +142,13 @@ export default function HomePage() {
               }}
               className={`hover:text-purple-400 transition-colors font-special `}
             >
-              Contact
+              {t("home.navContact")}
             </a>
           </div>
           
-          <div className="flex items-center">
-            <button onClick={GoToLogin} className={`hidden md:block bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] text-white px-6 py-2 rounded-full transition-all duration-300 font-bold font-special `}>
-              Get Started
+            <div className="flex items-center">
+              <button onClick={GoToLogin} className={`hidden md:block bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] text-white px-6 py-2 rounded-full transition-all duration-300 font-bold font-special `}>
+              {t("common.getStarted")}
             </button>
             <button 
               className="md:hidden text-white focus:outline-none"
@@ -173,7 +163,7 @@ export default function HomePage() {
         
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden bg-gray-800 py-4 px-4">
+          <div className="md:hidden bg-black/80 backdrop-blur-xl border-t border-white/10 py-4 px-4">
             <div className="flex flex-col space-y-4">
               <a
                 href="#studios"
@@ -183,7 +173,7 @@ export default function HomePage() {
                 }}
                 className={`hover:text-purple-400 transition-colors font-special hover:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] `}
               >
-                Studios
+                {t("home.navStudios")}
               </a>
               <a
                 href="#how-it-works"
@@ -193,7 +183,7 @@ export default function HomePage() {
                 }}
                 className={`hover:text-purple-400 transition-colors hover:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)]`}
               >
-                How It Works ?
+                {t("home.navHowItWorks")}
               </a>
               <a
                 href="#contact"
@@ -203,102 +193,228 @@ export default function HomePage() {
                 }}
                 className={`hover:text-purple-400 transition-colors hover:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)]`}
               >
-                Contact
+                {t("home.navContact")}
               </a>
               <button
                 onClick={GoToLogin}
                 className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-2 rounded-full font-medium transition-all duration-300 mr-8"
               >
-                Sign In
+                {t("common.signIn")}
               </button>
             </div>
           </div>
         )}
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative z-10 min-h-screen flex items-center ml-5">
-        <div className="container mx-auto px-4 py-24">
-          <div className="max-w-3xl">
-            <h1 className={`text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight font-special `}>
-              Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400 drop-shadow-[0_0_8px_rgba(147,51,234,0.8)]">Next</span><br />
+      {/* Hero — Visual Story Intro */}
+      <section className="relative z-10 min-h-[100dvh] flex items-center">
+        <div className="absolute inset-0 z-0 overflow-hidden">
+          <div className="absolute inset-0 bg-black/65" />
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="metadata"
+            className="w-full h-full object-cover opacity-95"
+          >
+            <source src="/vedio/recording.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+          <div className="absolute inset-0 bg-gradient-to-b from-black/65 via-black/25 to-gray-950" />
+        </div>
 
-              Recording Studio <br />
-              Found in <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400 drop-shadow-[0_0_8px_rgba(147,51,234,0.8)]">Minutes</span>.
+        <div className="relative z-10 lux-container py-28 sm:py-32">
+          <div data-reveal suppressHydrationWarning className="max-w-3xl">
+            <div className="inline-flex items-center gap-3 mb-6">
+              <span className="lux-chip border-white/10 bg-black/35 text-white/75">
+                {t("home.heroBadge")}
+              </span>
+              <span className="text-xs text-white/55 font-special-regular">
+                {t("home.heroKicker")}
+              </span>
+            </div>
+
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-[1.02] font-special">
+              {t("home.heroTitleA")}{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400 drop-shadow-[0_0_8px_rgba(147,51,234,0.6)]">
+                {t("home.heroTitleB")}
+              </span>
+              .
             </h1>
-            <p className={`text-xl text-gray-300 mb-10 max-w-2xl font-special-regular `}>
-              Discover the best recording spaces near you, book sessions instantly, and create your next masterpiece, all in 1 place
+
+            <p className="text-lg sm:text-xl text-gray-200/90 mb-10 max-w-2xl font-special-regular">
+              {t("home.heroSubtitle")}
             </p>
+
             <div className="flex flex-col sm:flex-row gap-4">
-              <button onClick={GoToLogin} className={`bg-gradient-to-r from-[#8A38F5] to-[#3C71E8] hover:from-purple-700 hover:to-blue-700 hover:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] text-white px-8 py-4 rounded-full font-semibold text-lg transition-all duration-300 transform hover:scale-105 font-special shadow-lg hover:shadow-2xl  `}>
-                Find a Studio
+              <button
+                onClick={GoToLogin}
+                className="lux-btn-metal px-8 py-4 rounded-full font-semibold text-lg transition-all duration-300 transform hover:scale-[1.02] font-special shadow-lg hover:shadow-2xl"
+              >
+                {t("home.ctaStart")}
               </button>
-              <button onClick={GoToLogin} className={`hover:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] bg-transparent border-2 border-purple-600 text-purple-400 hover:bg-purple-600 hover:text-white px-8 py-4 rounded-full font-semibold text-lg transition-all duration-300 font-special `}>
-                Join as a Studio
+              <button
+                onClick={() => scrollToSection('how-it-works')}
+                className="lux-btn-ghost px-8 py-4 rounded-full font-semibold text-lg transition-all duration-300 font-special"
+              >
+                {t("home.ctaWatch")}
+              </button>
+            </div>
+
+            <div className="mt-12 flex items-center gap-3 text-white/65 text-sm font-special-regular">
+              <span className="h-px w-10 bg-white/15" />
+              <button
+                type="button"
+                onClick={() => scrollToSection('how-it-works')}
+                className="hover:text-white transition-colors"
+              >
+                Scroll to Chapter 01
               </button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* How It Works Section */}
+      {/* The Story — How It Works */}
       <section
         id="how-it-works"
-        className="relative z-10 py-20 bg-gradient-to-b from-gray-900 to-gray-800 scroll-mt-24"
+        className="relative z-10 py-20 sm:py-24 bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 scroll-mt-24"
       >
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className={`text-4xl font-bold mb-4 font-special `}>How It Works ?</h2>
-            <p className="text-gray-400 max-w-2xl mx-auto font-special-regular">Simple steps to create, discover, and book recording sessions</p>
+        <div className="lux-container">
+          <div className="text-center mb-14 sm:mb-16" data-reveal suppressHydrationWarning>
+            <h2 className="text-4xl sm:text-5xl font-bold mb-4 font-special">
+              A visual flow for serious work
+            </h2>
+            <p className="text-gray-400 max-w-2xl mx-auto font-special-regular">
+              Each step is designed to feel cinematic—minimal clicks, clear choices, and premium details.
+            </p>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 max-w-5xl mx-auto">
-            {/* Step 1 */}
-            <div className="bg-gray-800 rounded-2xl p-8 border hover:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] border-gray-700 hover:border-purple-500 transition-all duration-300">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center mb-6">
-                <span className={`text-2xl font-bold font-special `}>1</span>
-              </div>
-              <h3 className={`text-2xl font-bold mb-4 font-special `}>Sign Up</h3>
-              <p className="text-gray-400 mb-6  font-specialRegular">Create an account as an artist or studio owner in just a few clicks.</p>
-              <div className="flex justify-center">
-                <div className="w-24 h-1 bg-gradient-to-r from-purple-600 to-blue-600"></div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+            {/* Sticky media (chapter mood) */}
+            <div className="lg:col-span-5 lg:sticky lg:top-28" data-reveal suppressHydrationWarning style={{ ['--reveal-delay' as any]: '90ms' }}>
+              <div className="lux-card lux-rect overflow-hidden p-0">
+                <div className="relative">
+                  <img
+                    src="/studio/cover.jpg"
+                    alt="Studio atmosphere"
+                    loading="lazy"
+                    decoding="async"
+                    onError={(e) => {
+                      const img = e.currentTarget;
+                      if (img.dataset.fallbackApplied) return;
+                      img.dataset.fallbackApplied = "1";
+                      img.src = "/studio/cover2.jpg";
+                    }}
+                    className="w-full aspect-[4/3] object-cover opacity-90 lux-media"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-black/55" />
+                  <div className="absolute inset-0 pointer-events-none opacity-35 [background-image:radial-gradient(rgba(255,255,255,0.10)_1px,transparent_1px)] [background-size:44px_44px]" />
+                </div>
+
+                <div className="p-6">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <div className="text-xs text-white/55 font-special-regular">Now playing</div>
+                      <div className="text-xl text-white font-special">The Session</div>
+                    </div>
+                    <div className="lux-chip border-white/10 bg-black/25 text-white/75">
+                      Luxury • Fast • Focused
+                    </div>
+                  </div>
+                  <div className="mt-4 text-sm text-gray-300 font-special-regular">
+                    Scroll through the chapters to see how we guide your booking from discovery to delivery.
+                  </div>
+                </div>
               </div>
             </div>
-            
-            {/* Step 2 */}
-            <div className="bg-gray-800 rounded-2xl p-8 border hover:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] border-gray-700 hover:border-purple-500 transition-all duration-300">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-r  from-purple-600 to-blue-600 flex items-center justify-center mb-6">
-                <span className={`text-2xl font-bold font-special `}>2</span>
-              </div>
-              <h3 className={`text-2xl font-bold mb-4 font-special `}>Discover or Offer</h3>
-              <p className="text-gray-400 mb-6  font-special-regular">Artists find perfect studios, studios showcase their services and spaces.</p>
-              <div className="flex justify-center">
-                <div className="w-24 h-1 bg-gradient-to-r from-purple-600 to-blue-600"></div>
-              </div>
-            </div>
-            
-            {/* Step 3 */}
-            <div className="bg-gray-800 rounded-2xl p-8 border hover:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] border-gray-700 hover:border-purple-500 transition-all duration-300">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center mb-6">
-                <span className={`text-2xl font-bold font-special `}>3</span>
-              </div>
-              <h3 className={`text-2xl font-bold mb-4 font-special `}>Book & Create</h3>
-              <p className={`text-gray-400 mb-6  font-special-regular`}>Book sessions instantly, manage your calendar, and focus on creating.</p>
+
+            {/* Chapters */}
+            <div className="lg:col-span-7 space-y-6">
+              {[
+                {
+                  k: '01',
+                  title: 'Find the room that fits your sound',
+                  copy: 'Search by vibe, gear, location, and availability—then preview the space like a cinematic catalog.',
+                  bullets: ['Curated studios', 'Smart filters', 'High-end visuals'],
+                },
+                {
+                  k: '02',
+                  title: 'Pick a time—fast and human',
+                  copy: 'Clear time slots, real pricing, and a booking dialog that stays smooth on mobile.',
+                  bullets: ['Fewer clicks', 'Human dates', 'Bold CTAs'],
+                },
+                {
+                  k: '03',
+                  title: 'Know what you’re walking into',
+                  copy: 'Explore the setup. Tap gear hotspots and take a virtual tour when available.',
+                  bullets: ['Interactive gear', 'Premium details', 'Confidence before you arrive'],
+                },
+                {
+                  k: '04',
+                  title: 'Create, review, repeat',
+                  copy: 'A premium loop: track your bookings, earn perks, and keep building momentum.',
+                  bullets: ['Bookings dashboard', 'Rewards & badges', 'Artist profile'],
+                },
+              ].map((chapter, idx) => (
+                <div
+                  key={chapter.k}
+                  data-reveal
+                  suppressHydrationWarning
+                  style={{ ['--reveal-delay' as any]: `${120 + idx * 70}ms` }}
+                  className="lux-card lux-rect lux-tilt p-6 sm:p-7"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className="text-xs text-white/55 font-special-regular">Chapter {chapter.k}</div>
+                      <h3 className="text-2xl sm:text-3xl font-bold text-white mt-1 font-special">
+                        {chapter.title}
+                      </h3>
+                    </div>
+                    <div className="h-10 w-10 rounded-xl border border-white/10 bg-white/5 flex items-center justify-center text-white/80 font-special">
+                      {chapter.k}
+                    </div>
+                  </div>
+
+                  <p className="text-gray-300 mt-4 font-special-regular">{chapter.copy}</p>
+
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    {chapter.bullets.map((b) => (
+                      <span key={b} className="lux-chip border-white/10 bg-black/25 text-white/75">
+                        {b}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                    <button onClick={GoToLogin} className="lux-btn-metal px-5 py-2.5 text-sm font-medium">
+                      Continue
+                    </button>
+                    <button
+                      onClick={() => scrollToSection('studios')}
+                      className="lux-btn-ghost px-5 py-2.5 text-sm font-medium"
+                    >
+                      See featured studios
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      <section className="relative z-10 py-20 bg-gradient-to-b from-gray-800 to-gray-900">
-  <div className="container mx-auto px-4">
-    <div className="text-center mb-16">
-      <h2 className={`text-4xl font-bold mb-4 font-special `}>For Artists and Studios</h2>
-      <p className={`text-gray-400 max-w-2xl mx-auto font-special-regular `}>Dedicated experiences tailored for music creators and recording spaces</p>
+      <section className="relative z-10 py-20 sm:py-24 bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950">
+  <div className="lux-container">
+    <div className="text-center mb-14 sm:mb-16" data-reveal suppressHydrationWarning>
+      <h2 className={`text-4xl sm:text-5xl font-bold mb-4 font-special `}>Choose your path</h2>
+      <p className={`text-gray-400 max-w-2xl mx-auto font-special-regular `}>Two premium experiences—one platform for creators and studios.</p>
     </div>
     
     <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-5xl mx-auto">
       {/* Artist Card - Expanded */}
-      <div className="bg-gray-800 rounded-2xl p-8 border hover:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] border-gray-700 hover:border-purple-500 transition-all duration-300 transform hover:-translate-y-2">
+      <div data-reveal suppressHydrationWarning style={{ ['--reveal-delay' as any]: '90ms' }} className="lux-card lux-rect lux-tilt p-8">
         <div className="flex flex-col md:flex-row gap-8">
           <div className="flex flex-col items-center">
             <div className="w-24 h-24 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center mb-6">
@@ -343,7 +459,7 @@ export default function HomePage() {
               </div>
             </div>
             
-            <button onClick={GoToLogin} className={`bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-3 rounded-full font-medium transition-all duration-300 w-full font-special `}>
+            <button onClick={GoToLogin} className="lux-btn-metal w-full px-6 py-3 rounded-full font-medium transition-all duration-300 font-special">
               Start Creating Today
             </button>
           </div>
@@ -351,7 +467,7 @@ export default function HomePage() {
       </div>
       
       {/* Studio Card - Expanded */}
-      <div className="bg-gray-800 rounded-2xl hover:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] p-8 border border-gray-700 hover:border-purple-500 transition-all duration-300 transform hover:-translate-y-2">
+      <div data-reveal suppressHydrationWarning style={{ ['--reveal-delay' as any]: '160ms' }} className="lux-card lux-rect lux-tilt p-8">
         <div className="flex flex-col md:flex-row gap-8">
           <div className="flex flex-col items-center">
             <div className="w-24 h-24 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center mb-6">
@@ -396,7 +512,7 @@ export default function HomePage() {
               </div>
             </div>
             
-            <button onClick={GoToLogin} className={`bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-3 rounded-full font-medium transition-all duration-300 w-full font-special `}>
+            <button onClick={GoToLogin} className="lux-btn-metal w-full px-6 py-3 rounded-full font-medium transition-all duration-300 font-special">
               List Your Studio
             </button>
           </div>
@@ -409,34 +525,48 @@ export default function HomePage() {
       {/* Featured Studios */}
       <section
         id="studios"
-        className="relative z-10 py-20 bg-gradient-to-b from-gray-900 to-gray-800 scroll-mt-24"
+        className="relative z-10 py-20 sm:py-24 bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 scroll-mt-24"
       >
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
+        <div className="lux-container">
+          <div className="text-center mb-14 sm:mb-16" data-reveal suppressHydrationWarning>
             <h2 className={`text-4xl font-bold mb-4 font-special `}>Featured Studios</h2>
             <p className={`text-gray-400 max-w-2xl mx-auto font-special-regular `}>Top-rated studios loved by artists worldwide</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
             {studios.map((studio, index) => (
-              <div key={index} className="bg-gray-800 rounded-2xl overflow-hidden border border-gray-700 hover:border-purple-500 transition-all duration-300">
-                <div className="h-48 bg-gradient-to-r from-purple-900 to-blue-900 flex items-center justify-center rounded-xl m-2">
-                  <div className="text-4xl">🎙️</div>
-                </div>
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className={`text-xl font-bold font-special `}>{studio.name}</h3>
-                      <p className={`text-gray-400 flex items-center font-special-regular `}>
-                        <FaMapMarkerAlt className="mr-4" /> {studio.location}
-                      </p>
-                    </div>
-                    <div className="flex items-center bg-gray-700 px-2 py-1 rounded-full">
-                      <FaStar className={`text-yellow-400 mr-1 font-special `} />
-                      <span>{studio.rating}</span>
-                    </div>
+              <div
+                key={index}
+                data-reveal
+                suppressHydrationWarning
+                style={{ ['--reveal-delay' as any]: `${80 + index * 70}ms` }}
+                className="lux-card lux-rect lux-tilt overflow-hidden"
+              >
+                <div className="relative">
+                  <img
+                    src={studio.image}
+                    alt={studio.name}
+                    className="h-48 w-full object-cover opacity-90 lux-media"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-transparent to-black/55" />
+                  <div className="absolute top-3 right-3 lux-chip border-white/10 bg-black/35 text-white/80">
+                    <FaStar className="text-yellow-400" /> {studio.rating}
                   </div>
-                  <button className={`w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-4 py-2 rounded-full transition-all duration-300 font-special `}>
+                </div>
+
+                <div className="p-6">
+                  <h3 className={`text-xl font-bold font-special `}>{studio.name}</h3>
+                  <p className={`text-gray-400 flex items-center font-special-regular mt-2`}>
+                    <FaMapMarkerAlt className="mr-2 text-purple-400" /> {studio.location}
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={GoToLogin}
+                    className="mt-5 w-full lux-btn-metal px-4 py-2.5 rounded-full transition-all duration-300 font-special"
+                  >
                     View Studio
                   </button>
                 </div>
@@ -447,15 +577,15 @@ export default function HomePage() {
       </section>
 
       {/* Testimonials */}
-      <section className="relative z-10 py-20 bg-gradient-to-b from-gray-800 to-gray-900">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
+      <section className="relative z-10 py-20 sm:py-24 bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950">
+        <div className="lux-container">
+          <div className="text-center mb-14 sm:mb-16" data-reveal suppressHydrationWarning>
             <h2 className={`text-4xl font-bold mb-4 font-special `}>What Our Community Says</h2>
             <p className={`text-gray-400 max-w-2xl mx-auto font-special-regular `}>Real experiences from artists and studios using Audio Alchemic</p>
           </div>
           
           <div className="max-w-4xl mx-auto relative">
-            <div className="bg-gray-800 rounded-2xl p-8 border border-gray-700">
+            <div data-reveal suppressHydrationWarning className="lux-card lux-rect p-8">
               <div className="flex flex-col items-center text-center">
                 <div className="text-4xl mb-4">❝</div>
                 <p className={`text-xl italic mb-8 max-w-2xl font-special `}>{testimonials[currentSlide].text}</p>
@@ -469,13 +599,15 @@ export default function HomePage() {
             <div className="flex justify-center mt-8 space-x-4">
               <button 
                 onClick={prevSlide}
-                className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center hover:bg-purple-600 transition-colors"
+                className="lux-btn-ghost w-12 h-12 rounded-full flex items-center justify-center"
+                aria-label="Previous testimonial"
               >
                 <FaChevronLeft />
               </button>
               <button 
                 onClick={nextSlide}
-                className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center hover:bg-purple-600 transition-colors"
+                className="lux-btn-ghost w-12 h-12 rounded-full flex items-center justify-center"
+                aria-label="Next testimonial"
               >
                 <FaChevronRight />
               </button>

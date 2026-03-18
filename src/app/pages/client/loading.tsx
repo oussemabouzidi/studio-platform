@@ -1,9 +1,11 @@
 'use client';
 import React from 'react';
+import ClientBackdrop from '@/app/components/ClientBackdrop';
 
 export default function Loading() {
   return (
-    <div className="min-h-screen bg-gray-900 text-white relative overflow-hidden">
+    <div className="min-h-screen bg-gray-950 text-white relative overflow-hidden lux-rect">
+      <ClientBackdrop />
 
       {/* Content */}
       <div className="relative z-20 min-h-screen flex flex-col items-center justify-center">

@@ -366,22 +366,24 @@ export async function updateArtistProfile(id, Data) {
 
 
 export async function getMiniProfile(id) {
-  const res = await fetch(`${api_base_url}/${id}/profile`);
+  const res = await fetch(`${api_base_url}/${id}/mini-profile`);
   if (!res.ok) {
-    throw new Error("Failed to fetch mini profile");
+    const body = await readJsonSafe(res);
+    throw new Error(body?.error || body?.message || "Failed to fetch mini profile");
   }
 
-  const backendprofile = await res.json();
+  const backendprofile = await readJsonSafe(res);
+  if (!backendprofile) throw new Error("Failed to parse mini profile");
 
   const profileUI =  {
     name: backendprofile.fullName,
     artistName: backendprofile.artistName,
     avatar: backendprofile.avatarImage,
     preferences: {
-      genres: backendprofile.genres,
+      genres: backendprofile.genres ?? [],
       location: backendprofile.location,
       priceRange: [50, 120],
-    equipment: backendprofile.instruments,
+    equipment: backendprofile.instruments ?? [],
     }
   };
       
@@ -445,6 +447,49 @@ export async function createReview(review) {
   }
 }
 
+export async function updateReview(artistId, reviewId, data) {
+  const res = await fetch(`${api_base_url}/${artistId}/reviews/${reviewId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const err = await readJsonSafe(res);
+    throw new Error((err && (err.error || err.message)) || "Failed to update review");
+  }
+
+  return res.json();
+}
+
+export async function deleteReview(artistId, reviewId) {
+  const res = await fetch(`${api_base_url}/${artistId}/reviews/${reviewId}`, {
+    method: "DELETE",
+  });
+
+  if (!res.ok) {
+    const err = await readJsonSafe(res);
+    throw new Error((err && (err.error || err.message)) || "Failed to delete review");
+  }
+
+  return res.json();
+}
+
+export async function updatePortfolioItem(artistId, portfolioId, data) {
+  const res = await fetch(`${api_base_url}/${artistId}/portfolio/${portfolioId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const err = await readJsonSafe(res);
+    throw new Error((err && (err.error || err.message)) || "Failed to update portfolio item");
+  }
+
+  return res.json();
+}
+
 
 export async function addFavorite(data) {
   try {
@@ -472,37 +517,59 @@ export async function addFavorite(data) {
 }
 
 
-export async function getGamificationData(userId) {
-  try {
-    const res = await fetch(`${API_BASE_URL}/studio/${userId}/gamification`);
-    
-    if (!res.ok) {
-      throw new Error("Failed to fetch gamification data");
-    }
+function transformGamification(backendData) {
+  const perks =
+    Array.isArray(backendData.perks)
+      ? backendData.perks
+      : backendData.perks
+        ? String(backendData.perks).split(",")
+        : [];
 
-    const backendData = await res.json();
+  const rewards =
+    Array.isArray(backendData.rewards)
+      ? backendData.rewards
+      : backendData.rewards
+        ? String(backendData.rewards).split(",")
+        : [];
 
-    // Transform the backend data to UI format
-    const gamificationUI = {
-      gamification_id: backendData.gamification_id,
-      user_id: backendData.user_id,
-      user_type: backendData.user_type,
-      points: backendData.points,
-      normal_level: backendData.normal_level,
-      xp_level: backendData.xp_level,
-      last_level_up: backendData.last_level_up,
-      created_at: backendData.created_at,
-      updated_at: backendData.updated_at,
-      perks: backendData.perks ? backendData.perks.split(',') : [],
-      rewards: backendData.rewards ? backendData.rewards.split(',') : []
-    };
+  return {
+    gamification_id: backendData.gamification_id,
+    user_id: backendData.user_id,
+    user_type: backendData.user_type,
+    points: Number(backendData.points) || 0,
+    normal_level: Number(backendData.normal_level) || 1,
+    xp_level: Number(backendData.xp_level) || 1,
+    last_level_up: backendData.last_level_up,
+    created_at: backendData.created_at,
+    updated_at: backendData.updated_at,
+    bookings_last6: Number(backendData.bookings_last6) || 0,
+    bookings_all: Number(backendData.bookings_all) || 0,
+    reviews_last6: Number(backendData.reviews_last6) || 0,
+    reviews_all: Number(backendData.reviews_all) || 0,
+    perks: perks.map((p) => String(p).trim()).filter(Boolean),
+    rewards: rewards.map((r) => String(r).trim()).filter(Boolean),
+  };
+}
 
-    console.log("Gamification API method worked successfully");
-    console.log(gamificationUI);
-
-    return gamificationUI;
-  } catch (error) {
-    console.error("Error in getGamificationData:", error);
-    throw error;
+async function fetchGamification(url) {
+  const res = await fetch(url);
+  if (!res.ok) {
+    const err = await readJsonSafe(res);
+    throw new Error((err && (err.error || err.message)) || "Failed to fetch gamification data");
   }
+  const backendData = await res.json();
+  return transformGamification(backendData);
+}
+
+export async function getArtistGamificationData(artistId) {
+  return fetchGamification(`${API_BASE_URL}/artist/${artistId}/gamification`);
+}
+
+export async function getStudioGamificationData(studioId) {
+  return fetchGamification(`${API_BASE_URL}/studio/${studioId}/gamification`);
+}
+
+// Backward compatible alias (studio default).
+export async function getGamificationData(userId) {
+  return getStudioGamificationData(userId);
 }

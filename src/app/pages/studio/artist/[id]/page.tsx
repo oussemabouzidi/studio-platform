@@ -139,7 +139,7 @@ export default function ArtistProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white p-4 sm:p-8">
+    <div className="relative py-6 px-4 sm:px-6 md:px-8">
       <div className="max-w-6xl mx-auto">
                  {/* Back Button */}
                       <button 

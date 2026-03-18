@@ -1,16 +1,26 @@
+ "use client";
+
 import { Fragment, useEffect, useState } from 'react';
 import { Menu, Transition } from '@headlessui/react';
 import { FaBell, FaCalendarAlt, FaCheckCircle, FaCoins, FaTimes } from 'react-icons/fa';
 import { Notfications } from '../pages/client/types';
 import { getNotifications } from '../pages/client/service/api';
+import { formatHumanDateSmart } from '@/app/lib/datetime';
+import { useT } from '@/app/i18n/useT';
 
 const NotificationDropdown = () => {
   const [notifications, setNotifications] = useState<Notfications[]>([]);
+  const t = useT();
 
   useEffect(() => {
       async function fetchNotifications() {
         try {
-          const data = await getNotifications(1);
+          const rawId = localStorage.getItem("artist_id") ?? localStorage.getItem("user_id");
+          if (!rawId) return;
+          const id = Number(rawId);
+          if (!Number.isFinite(id)) return;
+
+          const data = await getNotifications(id);
           setNotifications(data);
           console.log("notification data is working");
         } catch (err) {
@@ -64,18 +74,18 @@ const NotificationDropdown = () => {
         leaveFrom="transform opacity-100 scale-100"
         leaveTo="transform opacity-0 scale-95"
       >
-        <Menu.Items className="absolute -right-45 z-20 mt-2 w-96  origin-top-right rounded-md bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none border border-gray-700 backdrop-blur-lg">
+        <Menu.Items className="absolute -right-45 z-20 mt-2 w-96 origin-top-right lux-popover lux-rect focus:outline-none">
           {/* Header */}
-          <div className="px-4 py-3 border-b border-gray-700 flex justify-between items-center">
-            <h3 className="text-lg font-bold text-white font-special">Notifications</h3>
+          <div className="px-4 py-3 border-b border-white/10 flex justify-between items-center">
+            <h3 className="text-lg font-bold text-white font-special">{t('notifications.title')}</h3>
             <div className="flex space-x-2">
               <button 
                 onClick={markAllAsRead}
                 className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
               >
-                Mark all as read
+                {t('notifications.markAllRead')}
               </button>
-              
+               
             </div>
           </div>
 
@@ -83,7 +93,7 @@ const NotificationDropdown = () => {
           <div className="max-h-96 overflow-y-auto">
             {notifications.length === 0 ? (
               <div className="py-8 text-center">
-                <p className="text-gray-400">No notifications</p>
+                <p className="text-gray-400">{t('notifications.none')}</p>
               </div>
             ) : (
               notifications.map((notification) => (
@@ -136,7 +146,7 @@ const NotificationDropdown = () => {
                           {notification.type === 'booking' && notification.date && (
                             <div className="mt-2 flex items-center text-xs text-blue-400">
                               <FaCalendarAlt className="mr-1" />
-                              <span>{new Date(notification.date).toLocaleDateString("en-CA")}</span>
+                              <span>{formatHumanDateSmart(notification.date)}</span>
                             </div>
                           )}
                           
@@ -148,26 +158,26 @@ const NotificationDropdown = () => {
                           
                           {/* Time */}
                           <div className="mt-2 text-xs text-gray-500">
-                            {notification.time.toLocaleString()}
+                            {formatHumanDateSmart(notification.time)}
                           </div>
                           
                           {/* Claim Button */}
                           {notification.type === 'points' && !notification.claimed && (
-                            <button
-                              onClick={() => claimPoints(notification.id)}
-                              className="mt-2 px-3 py-1 bg-gradient-to-r from-yellow-600 to-yellow-800 hover:from-yellow-700 hover:to-yellow-900 text-white text-xs rounded-full transition-all flex items-center"
-                            >
-                              <FaCoins className="mr-1" />
-                              Claim Points
-                            </button>
-                          )}
-                          
-                          {notification.type === 'points' && notification.claimed && (
-                            <div className="mt-2 text-xs text-green-400 flex items-center">
-                              <FaCheckCircle className="mr-1" />
-                              Points claimed!
-                            </div>
-                          )}
+                             <button
+                               onClick={() => claimPoints(notification.id)}
+                               className="mt-2 px-3 py-1 bg-gradient-to-r from-yellow-600 to-yellow-800 hover:from-yellow-700 hover:to-yellow-900 text-white text-xs rounded-full transition-all flex items-center"
+                             >
+                               <FaCoins className="mr-1" />
+                               {t('notifications.claimPoints')}
+                             </button>
+                           )}
+                           
+                           {notification.type === 'points' && notification.claimed && (
+                             <div className="mt-2 text-xs text-green-400 flex items-center">
+                               <FaCheckCircle className="mr-1" />
+                               {t('notifications.pointsClaimed')}
+                             </div>
+                           )}
                         </div>
                       </div>
                     </div>

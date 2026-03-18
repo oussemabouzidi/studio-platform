@@ -15,19 +15,23 @@ import {
   FaSoundcloud,
   FaYoutube,
   FaArrowLeft
-} from 'react-icons/fa';
+ } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { specialGothic } from '@/app/fonts';
 import { ArtistFormData } from '@/app/pages/studio/types';
 import { getProfile } from '@/app/pages/studio/services/api';
 import ReviewsSection from '@/app/components/ReviewsSection';
 import { Reviews } from '../../types';
-import { getReviews } from '../../service/api';
+import { deleteReview, getReviews, updateReview } from '../../service/api';
 import { useRouter } from 'next/navigation'; // Added useRouter
+import ClientBackdrop from '@/app/components/ClientBackdrop';
+import YesNoModal from '@/app/components/YesNoModal';
+import { useT } from '@/app/i18n/useT';
 
 
 
 export default function ArtistProfilePage() {
+  const t = useT();
   const [artistData, setArtistData] = useState<ArtistFormData>({
     fullName: '',
     artistName: '',
@@ -54,41 +58,99 @@ export default function ArtistProfilePage() {
   });
 
   const [reviews, setReviews] = useState<Reviews[]>([]);
-    // Fetching reviews - Fix the key error by ensuring proper IDs
-    useEffect(() => {
-      async function fetchReviews() {
-        try {
-          const data = await getReviews(1);
-          // Ensure each review has a unique ID
-          const reviewsWithIds = data.map((review: { id: any; }, index: any) => ({
-            ...review,
-            id: review.id || index // Use existing ID or fallback to index
-          }));
-          setReviews(reviewsWithIds);
-          console.log("review data is working");
-        } catch (err) {
-          console.error(err);
-        }
-      }
-      fetchReviews();
-    }, []);
-  // fetch profile
+  const [artistId, setArtistId] = useState<number | null>(null);
+
+  const [modalMode, setModalMode] = useState<null | 'edit' | 'delete'>(null);
+  const [selectedReview, setSelectedReview] = useState<Reviews | null>(null);
+  const [draftRating, setDraftRating] = useState<number>(5);
+  const [draftComment, setDraftComment] = useState<string>('');
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
   useEffect(() => {
-        async function fetchProfile() {
-          try {
-            const data = await getProfile(1);
-            setArtistData(data);
-            console.log(data);
-            console.log("profile data is working");
-          } catch (err) {
-            console.error(err);
-          }
-          }
-        fetchProfile();
-      }, []);
+    const raw = localStorage.getItem("artist_id") ?? localStorage.getItem("user_id");
+    if (!raw) return;
+    const id = Number(raw);
+    if (!Number.isFinite(id)) return;
+    setArtistId(id);
+  }, []);
+
+  useEffect(() => {
+    if (!artistId) return;
+
+    async function fetchProfileAndReviews() {
+      try {
+        const [profile, reviewsData] = await Promise.all([
+          getProfile(artistId),
+          getReviews(artistId),
+        ]);
+        setArtistData(profile);
+        setReviews(reviewsData);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    fetchProfileAndReviews();
+  }, [artistId]);
 
 
         const router = useRouter(); // Initialize router
+
+  const closeModal = () => {
+    setModalMode(null);
+    setSelectedReview(null);
+    setIsSubmittingReview(false);
+  };
+
+  const openDeleteModal = (review: Reviews) => {
+    setSelectedReview(review);
+    setModalMode('delete');
+  };
+
+  const openEditModal = (review: Reviews) => {
+    setSelectedReview(review);
+    setDraftRating(Number(review.rating) || 5);
+    setDraftComment(String(review.comment ?? ''));
+    setModalMode('edit');
+  };
+
+  const confirmDelete = async () => {
+    if (!artistId || !selectedReview) return;
+    const reviewId = Number(selectedReview.id);
+    if (!Number.isFinite(reviewId)) return;
+
+    setIsSubmittingReview(true);
+    try {
+      await deleteReview(artistId, reviewId);
+      setReviews((prev) => prev.filter((r) => Number(r.id) !== reviewId));
+      closeModal();
+    } catch (err) {
+      console.error(err);
+      setIsSubmittingReview(false);
+    }
+  };
+
+  const confirmEdit = async () => {
+    if (!artistId || !selectedReview) return;
+    const reviewId = Number(selectedReview.id);
+    if (!Number.isFinite(reviewId)) return;
+
+    setIsSubmittingReview(true);
+    try {
+      const updated = await updateReview(artistId, reviewId, {
+        rating: draftRating,
+        comment: draftComment,
+      });
+
+      setReviews((prev) =>
+        prev.map((r) => (Number(r.id) === reviewId ? { ...r, ...updated } : r))
+      );
+      closeModal();
+    } catch (err) {
+      console.error(err);
+      setIsSubmittingReview(false);
+    }
+  };
       
 
   const toggleDemoPlay = (index: number) => {
@@ -109,9 +171,9 @@ export default function ArtistProfilePage() {
 
   const renderExperienceLevel = (level: string) => {
     switch(level) {
-      case 'beginner': return 'Beginner';
-      case 'intermediate': return 'Intermediate';
-      case 'pro': return 'Professional';
+      case 'beginner': return t('profile.experienceLevels.beginner');
+      case 'intermediate': return t('profile.experienceLevels.intermediate');
+      case 'pro': return t('profile.experienceLevels.pro');
       default: return level;
     }
   };
@@ -120,42 +182,44 @@ export default function ArtistProfilePage() {
     return (
       <motion.div 
         key={index}
-        className="bg-gray-800/50 h-65 w-50 backdrop-blur rounded-xl p-4 border border-gray-700 hover:border-purple-500/50 transition-all"
+        className="lux-card lux-rect lux-tilt h-65 w-50 p-4"
         whileHover={{ y: -5 }}
       >
         <div className="relative group">
           {item.type === 'image' && (
-            <div className="bg-gray-700 rounded-lg w-40 h-40 flex items-center justify-center">
+            <div className="w-40 h-40 flex items-center justify-center rounded-lg border border-white/10 bg-black/25">
               <div className="text-center">
-                <div className="bg-gray-600 rounded-full p-3 inline-block mb-2">
+                <div className="rounded-full border border-white/10 bg-white/5 p-3 inline-block mb-2">
                   <FaMusic className="text-xl" />
                 </div>
-                <p className="text-sm">Image</p>
+                <p className="text-sm">{t('profile.portfolioTypes.image')}</p>
               </div>
             </div>
           )}
           {item.type === 'video' && (
             <div className="relative">
-              <div className="bg-gray-700 rounded-lg w-40 h-40 flex items-center justify-center">
+              <div className="w-40 h-40 flex items-center justify-center rounded-lg border border-white/10 bg-black/25">
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/70 rounded-lg" />
                 <FaPlay className="text-3xl text-white opacity-70" />
               </div>
             </div>
           )}
           {item.type === 'audio' && (
-            <div className="bg-gray-700 rounded-lg w-40 h-40 flex items-center justify-center">
+            <div className="w-40 h-40 flex items-center justify-center rounded-lg border border-white/10 bg-black/25">
               <div className="text-center">
-                <div className="bg-gray-600 rounded-full p-3 inline-block mb-2">
+                <div className="rounded-full border border-white/10 bg-white/5 p-3 inline-block mb-2">
                   <FaHeadphones className="text-xl" />
                 </div>
-                <p className="text-sm">Audio Track</p>
+                <p className="text-sm">{t('profile.portfolioTypes.audio')}</p>
               </div>
             </div>
           )}
           
           <div className="mt-3">
             <h4 className="font-semibold text-white">{item.title}</h4>
-            <div className="text-xs text-gray-400 uppercase mt-1">{item.type}</div>
+            <div className="text-xs text-gray-400 uppercase mt-1">
+              {t(`profile.portfolioTypes.${item.type}`)}
+            </div>
           </div>
         </div>
       </motion.div>
@@ -163,22 +227,72 @@ export default function ArtistProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white p-4 sm:p-8">
+    <div className="min-h-screen relative overflow-hidden bg-gray-950 text-white p-4 sm:p-8 lux-rect">
+      <ClientBackdrop />
+
+      <YesNoModal
+        open={modalMode === 'delete'}
+        title={t('profilePreview.reviews.deleteTitle')}
+        description={t('common.cannotBeUndone')}
+        onYes={confirmDelete}
+        onNo={closeModal}
+        yesText={t('common.yes')}
+        noText={t('common.no')}
+        loading={isSubmittingReview}
+      />
+
+      <YesNoModal
+        open={modalMode === 'edit'}
+        title={t('profilePreview.reviews.editTitle')}
+        description={t('profilePreview.reviews.editDescription')}
+        onYes={confirmEdit}
+        onNo={closeModal}
+        yesText={t('common.yes')}
+        noText={t('common.no')}
+        loading={isSubmittingReview}
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm text-white/80 mb-1">{t('reviews.rating')}</label>
+            <select
+              className="lux-input w-full"
+              value={draftRating}
+              onChange={(e) => setDraftRating(Number(e.target.value))}
+              disabled={isSubmittingReview}
+            >
+              {[5, 4, 3, 2, 1].map((v) => (
+                <option key={v} value={v}>
+                  {v}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm text-white/80 mb-1">{t('reviews.comment')}</label>
+            <textarea
+              className="lux-input w-full min-h-[110px]"
+              value={draftComment}
+              onChange={(e) => setDraftComment(e.target.value)}
+              disabled={isSubmittingReview}
+            />
+          </div>
+        </div>
+      </YesNoModal>
              
       
-      <div className="max-w-6xl mx-auto">
+      <div className="relative z-10 max-w-6xl mx-auto">
 
          {/* Back Button */}
               <button 
                 onClick={() => router.back()} 
-                className="flex items-center text-gray-300 hover:text-white mb-6 transition-colors"
+                className="lux-btn-ghost inline-flex items-center mb-6 px-4 py-2 text-sm font-medium text-white/85"
               >
                 <FaArrowLeft className="mr-2" />
-                Back to Dashboard
+                {t('profile.backToDashboard')}
               </button>
         {/* Artist Header */}
         <motion.div 
-          className="flex flex-col md:flex-row items-center gap-8 mb-12 p-6 bg-gray-800/30 backdrop-blur-lg rounded-2xl border border-gray-700"
+          className="flex flex-col md:flex-row items-center gap-8 mb-12 p-6 lux-card lux-rect lux-tilt"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -221,15 +335,15 @@ export default function ArtistProfilePage() {
               
               <div className="flex items-center">
                 <div className="w-2 h-2 bg-green-400 rounded-full mr-2" />
-                <span className="text-green-400">Available</span>
+                <span className="text-green-400">{t('common.available')}</span>
               </div>
               
-              <div className="bg-purple-900/30 px-3 py-1 rounded-full text-sm">
+              <div className="lux-chip border-purple-400/20 bg-purple-500/10 text-purple-100">
                 {renderExperienceLevel(artistData.experienceLevel)}
               </div>
               
               {artistData.yearsOfExperience && (
-                <div className="bg-blue-900/30 px-3 py-1 rounded-full text-sm">
+                <div className="lux-chip border-blue-400/20 bg-blue-500/10 text-blue-100">
                   {artistData.yearsOfExperience} years experience
                 </div>
               )}
@@ -251,7 +365,7 @@ export default function ArtistProfilePage() {
           <div className="lg:col-span-2 space-y-8">
             {/* Genres & Instruments */}
             <motion.div 
-              className="bg-gray-800/30 backdrop-blur-lg rounded-2xl p-6 border border-gray-700"
+              className="lux-card lux-rect lux-tilt p-6"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.4, duration: 0.5 }}
@@ -269,7 +383,7 @@ export default function ArtistProfilePage() {
                     {artistData.genres.map((genre, index) => (
                       <span 
                         key={index} 
-                        className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 px-3 py-1.5 rounded-full text-sm"
+                        className="lux-chip border-white/10 bg-white/5 text-white/85"
                       >
                         {genre}
                       </span>
@@ -285,7 +399,7 @@ export default function ArtistProfilePage() {
                     {artistData.instruments.map((instrument, index) => (
                       <span 
                         key={index} 
-                        className="bg-gradient-to-r from-green-900/30 to-blue-900/30 px-3 py-1.5 rounded-full text-sm"
+                        className="lux-chip border-white/10 bg-white/5 text-white/85"
                       >
                         {instrument}
                       </span>
@@ -298,7 +412,7 @@ export default function ArtistProfilePage() {
             {/* Demo Tracks */}
             {artistData.demos.length > 0 && (
               <motion.div 
-                className="bg-gray-800/30 backdrop-blur-lg rounded-2xl p-6 border border-gray-700"
+                className="lux-card lux-rect lux-tilt p-6"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.5, duration: 0.5 }}
@@ -311,7 +425,7 @@ export default function ArtistProfilePage() {
                   {artistData.demos.map((demo, index) => (
                     <div 
                       key={index} 
-                      className="bg-gray-900/50 backdrop-blur rounded-xl p-5 border border-gray-700"
+                      className="lux-card lux-rect p-5"
                     >
                       <div className="flex items-center justify-between mb-4">
                         <div>
@@ -321,18 +435,17 @@ export default function ArtistProfilePage() {
                         
                         <button 
                           onClick={() => toggleDemoPlay(index)}
-                          className={`rounded-full w-12 h-12 flex items-center justify-center ${
-                            demo.playing 
-                              ? 'bg-gradient-to-r from-purple-600 to-blue-600' 
-                              : 'bg-gray-700 hover:bg-gray-600'
-                          }`}
+                          className={[
+                            'w-12 h-12 rounded-full flex items-center justify-center',
+                            demo.playing ? 'lux-btn-metal' : 'lux-btn-ghost',
+                          ].join(' ')}
                         >
                           {demo.playing ? <FaPause /> : <FaPlay className="ml-1" />}
                         </button>
                       </div>
                       
                       {demo.playing && (
-                        <div className="w-full bg-gray-700 h-2 rounded-full overflow-hidden">
+                        <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
                           <motion.div 
                             className="bg-gradient-to-r from-purple-500 to-blue-500 h-full"
                             initial={{ width: '0%' }}
@@ -356,13 +469,13 @@ export default function ArtistProfilePage() {
             
             {/* Portfolio */}
             <motion.div 
-              className="bg-gray-800/30 backdrop-blur-lg rounded-2xl p-6 border border-gray-700"
+              className="lux-card lux-rect lux-tilt p-6"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.6, duration: 0.5 }}
             >
               <h2 className={`text-2xl font-bold mb-6 flex items-center ${specialGothic.className}`}>
-                <FaMusic className="mr-3 text-yellow-400" /> Portfolio
+                <FaMusic className="mr-3 text-yellow-400" /> {t('profilePreview.portfolioTitle')}
               </h2>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -379,90 +492,90 @@ export default function ArtistProfilePage() {
           <div className="space-y-8">
             {/* Contact Information */}
             <motion.div 
-              className="bg-gray-800/30 backdrop-blur-lg rounded-2xl p-6 border border-gray-700"
+              className="lux-card lux-rect lux-tilt p-6"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.4, duration: 0.5 }}
             >
               <h2 className={`text-2xl font-bold mb-6 flex items-center ${specialGothic.className}`}>
-                <FaUserFriends className="mr-3 text-green-400" /> Contact Artist
+                <FaUserFriends className="mr-3 text-green-400" /> {t('profilePreview.contactArtistTitle')}
               </h2>
               
               <div className="space-y-4">
-                <div className="flex items-center p-3 bg-gray-900/50 rounded-lg">
+                <div className="flex items-center p-3 rounded-lg border border-white/10 bg-black/25">
                   <div className="bg-purple-900/30 p-2 rounded-lg mr-3">
                     <FaEnvelope className="text-purple-400" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-400">Email</p>
+                    <p className="text-sm text-gray-400">{t('common.email')}</p>
                     <p className="font-medium">{artistData.contact.email}</p>
                   </div>
                 </div>
                 
-                <div className="flex items-center p-3 bg-gray-900/50 rounded-lg">
+                <div className="flex items-center p-3 rounded-lg border border-white/10 bg-black/25">
                   <div className="bg-blue-900/30 p-2 rounded-lg mr-3">
                     <FaPhone className="text-blue-400" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-400">Phone</p>
+                    <p className="text-sm text-gray-400">{t('common.phone')}</p>
                     <p className="font-medium">{artistData.contact.phone}</p>
                   </div>
                 </div>
                 
-                <div className="flex items-center p-3 bg-gray-900/50 rounded-lg">
+                <div className="flex items-center p-3 rounded-lg border border-white/10 bg-black/25">
                   <div className="bg-pink-900/30 p-2 rounded-lg mr-3">
                     <FaInstagram className="text-pink-400" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-400">Instagram</p>
+                    <p className="text-sm text-gray-400">{t('common.instagram')}</p>
                     <p className="font-medium">{artistData.contact.instagram}</p>
                   </div>
                 </div>
                 
-                <div className="flex items-center p-3 bg-gray-900/50 rounded-lg">
+                <div className="flex items-center p-3 rounded-lg border border-white/10 bg-black/25">
                   <div className="bg-orange-900/30 p-2 rounded-lg mr-3">
                     <FaSoundcloud className="text-orange-400" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-400">SoundCloud</p>
+                    <p className="text-sm text-gray-400">{t('common.soundcloud')}</p>
                     <p className="font-medium">{artistData.contact.soundcloud}</p>
                   </div>
                 </div>
                 
-                <div className="flex items-center p-3 bg-gray-900/50 rounded-lg">
+                <div className="flex items-center p-3 rounded-lg border border-white/10 bg-black/25">
                   <div className="bg-red-900/30 p-2 rounded-lg mr-3">
                     <FaYoutube className="text-red-400" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-400">YouTube</p>
+                    <p className="text-sm text-gray-400">{t('common.youtube')}</p>
                     <p className="font-medium">{artistData.contact.youtube}</p>
                   </div>
                 </div>
               </div>
               
-              <button className={`w-full mt-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-all duration-300 font-bold ${specialGothic.className}`}>
-                Send Booking Request
+              <button className={`w-full mt-6 py-3 lux-btn-metal font-bold ${specialGothic.className}`}>
+                {t('profilePreview.sendBookingRequest')}
               </button>
             </motion.div>
             
             {/* Languages & Availability */}
             <motion.div 
-              className="bg-gray-800/30 backdrop-blur-lg rounded-2xl p-6 border border-gray-700"
+              className="lux-card lux-rect lux-tilt p-6"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.5, duration: 0.5 }}
             >
               <h2 className={`text-2xl font-bold mb-4 flex items-center ${specialGothic.className}`}>
-                <FaGlobe className="mr-3 text-blue-400" /> Languages & Availability
+                <FaGlobe className="mr-3 text-blue-400" /> {t('profilePreview.languagesAvailabilityTitle')}
               </h2>
               
               <div className="mb-6">
-                <h3 className="font-semibold mb-2">Languages</h3>
+                <h3 className="font-semibold mb-2">{t('profilePreview.languagesTitle')}</h3>
                 <div className="flex flex-wrap gap-2">
                   {artistData.languages.map((lang, index) => (
                     <span 
                       key={index} 
-                      className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 px-3 py-1 rounded-full text-sm"
+                      className="lux-chip border-white/10 bg-white/5 text-white/85"
                     >
                       {lang}
                     </span>
@@ -471,8 +584,8 @@ export default function ArtistProfilePage() {
               </div>
               
               <div>
-                <h3 className="font-semibold mb-2">Availability</h3>
-                <div className="bg-gray-900/50 backdrop-blur rounded-lg p-4 border border-gray-700">
+                <h3 className="font-semibold mb-2">{t('profilePreview.availabilityTitle')}</h3>
+                <div className="lux-card lux-rect p-4">
                   <p className="text-gray-300">{artistData.availability}</p>
                 </div>
               </div>
@@ -481,19 +594,19 @@ export default function ArtistProfilePage() {
             {/* Collaborators */}
             {artistData.collaborators.length > 0 && (
               <motion.div 
-                className="bg-gray-800/30 backdrop-blur-lg rounded-2xl p-6 border border-gray-700"
+                className="lux-card lux-rect lux-tilt p-6"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.6, duration: 0.5 }}
               >
                 <h2 className={`text-2xl font-bold mb-4 flex items-center ${specialGothic.className}`}>
-                  <FaUserFriends className="mr-3 text-green-400" /> Frequent Collaborators
+                  <FaUserFriends className="mr-3 text-green-400" /> {t('profilePreview.frequentCollaboratorsTitle')}
                 </h2>
                 
                 <div className="space-y-3">
                   {artistData.collaborators.map((collab, index) => (
-                    <div key={index} className="flex items-center p-3 bg-gray-900/50 rounded-lg">
-                      <div className="bg-gray-700 rounded-full w-10 h-10 flex items-center justify-center mr-3">
+                    <div key={index} className="flex items-center p-3 rounded-lg border border-white/10 bg-black/25">
+                      <div className="rounded-full w-10 h-10 flex items-center justify-center mr-3 border border-white/10 bg-white/5">
                         <span className="text-xs">C{index + 1}</span>
                       </div>
                       <p className="font-medium">{collab}</p>
@@ -516,7 +629,7 @@ export default function ArtistProfilePage() {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
             >
-              <ReviewsSection reviews={reviews} />
+              <ReviewsSection reviews={reviews} onEdit={openEditModal} onDelete={openDeleteModal} />
             </motion.div>
       </div>
     </div>

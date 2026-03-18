@@ -1,20 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Getting Started (Frontend + Backend)
 
-## Getting Started
+This repo contains:
+- **Next.js frontend** (this folder)
+- **Express backend** (`backend/`)
 
-First, run the development server:
+### 1) Configure env
+
+Copy `.env.example` to your local env files:
+- Next.js: `.env.local`
+- Backend: `backend/.env`
+
+At minimum for local dev, ensure:
+- `API_BASE_URL` / `NEXT_PUBLIC_API_BASE_URL` point to the backend API (`http://localhost:8800/api`)
+- Backend DB vars are set (`DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`)
+
+### 2) Run backend (Express)
+
+```bash
+cd backend
+npm run dev
+```
+
+Backend runs on `http://localhost:8800` by default.
+
+### 3) Run frontend (Next.js)
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Frontend runs on `http://localhost:3000` by default.
+
+## Media Uploads
+
+### Local filesystem mode (default)
+
+Backend config:
+- `STORAGE_DRIVER=local`
+- `UPLOADS_DIR=./uploads` (relative to `backend/`)
+
+Endpoints:
+- `POST /api/upload` → multipart/form-data (`file` field) → returns `{ url, key, provider }`
+- `GET /api/media?page=1&pageSize=20` → paginated list
+- Uploaded files are served at `GET /uploads/<key>`
+
+Quick local verification:
+1) Open the **Manage Profile** page and upload a demo track (Demo Tracks section).
+2) Verify backend returns a URL like `http://localhost:8800/uploads/<key>`.
+3) Check the file exists under `backend/uploads/`.
+4) Call `GET http://localhost:8800/api/media` (or `GET /api/media` via Next.js) to see stored metadata.
+
+### Switch to OVH Object Storage (S3 compatible)
+
+Backend env:
+- `STORAGE_DRIVER=s3`
+- `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_REGION`
+- Optional but recommended: `PUBLIC_CDN_BASE_URL` (public base URL for objects)
+
+Two upload modes:
+- **Server-side upload (simple):** keep `USE_PRESIGNED_UPLOADS=false` and use `POST /api/upload`.
+- **Presigned upload (recommended):** set `USE_PRESIGNED_UPLOADS=true` (backend) and `NEXT_PUBLIC_USE_PRESIGNED_UPLOADS=true` (frontend).
+  - `POST /api/uploads/presign` → `{ uploadUrl, key, publicUrl }`
+  - Browser `PUT` directly to `uploadUrl`
+  - `POST /api/uploads/confirm` to persist metadata
 
 ## Test on a real phone (same Wi-Fi)
 

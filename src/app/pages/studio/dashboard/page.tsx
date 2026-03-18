@@ -12,6 +12,7 @@ import {
 import NotificationDropdown from "@/app/components/NotificationDropdown";
 import StudioProfileDropdown from "@/app/components/StudioProfileDropdown";
 import { Booking, Service, Review, Studio, Earning } from "../types";
+import { formatHumanDateSmart } from "@/app/lib/datetime";
 import {
   addServiceBackend,
   ApideleteService,
@@ -422,10 +423,10 @@ const StudioDashboard = () => {
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap">
                   <div className="text-sm text-white font-special-regular">
-                    {new Date(booking.date).toLocaleDateString("en-CA")}
+                    {formatHumanDateSmart(booking.date)}
                   </div>
                   <div className="text-sm text-gray-400 font-special-regular">
-                    {booking.time.toLocaleString()}
+                    {formatHumanDateSmart(booking.time)}
                   </div>
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-purple-400 font-bold font-special">
@@ -1086,7 +1087,7 @@ const StudioDashboard = () => {
                 </div>
               </a>
 
-              <div className="text-gray-500 text-sm">{review.date}</div>
+              <div className="text-gray-500 text-sm">{formatHumanDateSmart(review.date)}</div>
             </div>
 
             <p className="text-gray-300 mb-4">{review.comment}</p>
@@ -1106,16 +1107,10 @@ const StudioDashboard = () => {
   );
 
   // Add this render method for the gamification tab
-  const renderGamificationTab = () => <StudioGamification studioId={202} />;
+  const renderGamificationTab = () => <StudioGamification studioId={studioId ?? undefined} />;
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gray-900">
-      {/* Animated Background - Behind everything */}
-      <div className="absolute inset-0 z-[-1]">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0f0f0f] via-[#132257] to-[#777777] animate-gradient"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(126,34,206,0.15)_0%,_transparent_70%)] animate-pulse-slow"></div>
-      </div>
-
+    <div className="relative">
       {/* Top Navigation Bar */}
       <div className="relative z-20 w-full">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
@@ -1130,7 +1125,7 @@ const StudioDashboard = () => {
 
           {/* Tab Navigation - Center */}
           <div className="flex justify-center w-full md:w-auto">
-            <div className="relative bg-gray-800/50 backdrop-blur-lg rounded-full p-1 border border-gray-500 border-t-white/30 border-l-white/30 shadow-2xl">
+            <div className="lux-card lux-rect p-1 shadow-2xl bg-black/35 border-white/10 rounded-full backdrop-blur-lg">
               <div className="flex flex-wrap md:flex-nowrap md:space-x-1 space-x-0.5 justify-center">
                 {tabs.map((tab) => (
                   <button

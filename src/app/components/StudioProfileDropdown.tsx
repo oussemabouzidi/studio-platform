@@ -3,6 +3,7 @@ import { Fragment } from 'react';
 import { Menu, Transition } from '@headlessui/react';
 import Link from 'next/link';
 import { logout } from '@/app/pages/auth/service/api';
+import { useT } from '@/app/i18n/useT';
 
 type StudioProfile = {
   name: string;
@@ -14,6 +15,7 @@ type StudioProfileDropdownProps = {
 };
 
 const StudioProfileDropdown = ({ studioProfile }: StudioProfileDropdownProps) => {
+  const t = useT();
   const signout = async () => {
     logout().catch(() => null);
 
@@ -67,31 +69,31 @@ const StudioProfileDropdown = ({ studioProfile }: StudioProfileDropdownProps) =>
           </div>
 
           {/* Menu Items */}
-          <Menu.Item>
-            {({ active }) => (
-              <Link
-                href="profile"
+           <Menu.Item>
+             {({ active }) => (
+               <Link
+                href="/pages/studio/profile"
                 className={`${
                   active ? 'bg-gray-700' : ''
                 } block px-4 py-2 text-sm text-gray-300`}
-              >
-                Manage Studio Profile
-              </Link>
-            )}
-          </Menu.Item>
+               >
+                {t('common.manageStudioProfile')}
+               </Link>
+             )}
+           </Menu.Item>
           
           <Menu.Item>
             {({ active }) => (
               <Link
-                href="settings"
+                href="/pages/studio/settings"
                 className={`${
                   active ? 'bg-gray-700' : ''
                 } block px-4 py-2 text-sm text-gray-300`}
-              >
-                Studio Settings
-              </Link>
-            )}
-          </Menu.Item>
+               >
+                {t('common.studioSettings')}
+               </Link>
+             )}
+           </Menu.Item>
           
           
           <Menu.Item>
@@ -101,11 +103,11 @@ const StudioProfileDropdown = ({ studioProfile }: StudioProfileDropdownProps) =>
                 className={`${
                   active ? 'bg-gray-700' : ''
                 } block px-4 py-2 text-sm text-gray-300`}
-              >
-                Help & Support
-              </Link>
-            )}
-          </Menu.Item>
+               >
+                {t('common.helpSupport')}
+               </Link>
+             )}
+           </Menu.Item>
           
           <div className="border-t border-gray-700 my-1" />
           
@@ -115,10 +117,10 @@ const StudioProfileDropdown = ({ studioProfile }: StudioProfileDropdownProps) =>
                 onClick={signout}
                 type="button"
                 className={`${
-                  active ? 'bg-gray-700' : ''
+                 active ? 'bg-gray-700' : ''
                 } block w-full text-left px-4 py-2 text-sm text-red-500`}
               >
-                Log Out
+                {t('common.logOut')}
               </button>
             )}
           </Menu.Item>

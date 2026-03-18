@@ -10,6 +10,12 @@ import {getAllStudios, getBookingsByArtist, getMiniProfile} from '../service/api
 import { Booking, Reviews, Studio } from '../types';
 import { useRouter } from "next/navigation";
 import { StudioCard } from '../../../components/StudioCardGrid';
+import { formatHumanDate, formatHumanTimeRange } from '@/app/lib/datetime';
+import ClientBackdrop from '@/app/components/ClientBackdrop';
+import ClientStudiosBackdrop from '@/app/components/ClientStudiosBackdrop';
+import LuxSpinner from '@/app/components/LuxSpinner';
+import { useT } from '@/app/i18n/useT';
+import { useI18n } from '@/app/i18n/I18nProvider';
 
 // Custom icon for analytics
 const FaChartBar = () => (
@@ -20,16 +26,16 @@ const FaChartBar = () => (
 
 // Perk configuration based on level (icons removed)
 const STUDIO_PERKS = {
-  1: { name: "Basic", badge: null, description: "Listed in search, can receive bookings" },
-  2: { name: "Highlighted", badge: "Pro", color: "blue", description: "Highlighted profile with Pro badge" },
-  3: { name: "Ranking Boost", badge: "Boost", color: "green", description: "Small ranking boost in search results" },
-  4: { name: "Featured", badge: "Featured", color: "purple", description: "Featured placement in local searches" },
-  5: { name: "Priority", badge: "Priority", color: "orange", description: "Priority in category listings" },
-  6: { name: "Analytics", badge: "Analytics", color: "teal", description: "Premium analytics & insights" },
-  7: { name: "Headliner", badge: "Headliner", color: "red", description: "Top search placement" },
-  8: { name: "Promo", badge: "Promo", color: "pink", description: "Exclusive promo campaigns" },
-  9: { name: "Legend", badge: "Legend", color: "yellow", description: "Lower commission (-1%)" },
-  10: { name: "Elite", badge: "Elite", color: "gradient", description: "Top banner placement, special media features" }
+  1: { badgeKey: null },
+  2: { badgeKey: 'studios.badges.pro', color: 'blue' },
+  3: { badgeKey: 'studios.badges.boost', color: 'green' },
+  4: { badgeKey: 'studios.badges.featured', color: 'purple' },
+  5: { badgeKey: 'studios.badges.priority', color: 'orange' },
+  6: { badgeKey: 'studios.badges.analytics', color: 'teal' },
+  7: { badgeKey: 'studios.badges.headliner', color: 'red' },
+  8: { badgeKey: 'studios.badges.promo', color: 'pink' },
+  9: { badgeKey: 'studios.badges.legend', color: 'yellow' },
+  10: { badgeKey: 'studios.badges.elite', color: 'gradient' }
 } as const;
 
 type StudioFilters = {
@@ -45,6 +51,8 @@ type StudioFilters = {
 };
 
 const StudiosPage = () => {
+  const t = useT();
+  const { locale } = useI18n();
   const [studios, setStudios] = useState<Studio[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [reviews, setReviews] = useState<Reviews[]>([]);
@@ -65,6 +73,7 @@ const StudiosPage = () => {
   });
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isFetchingStudios, setIsFetchingStudios] = useState(true);
   const [openFilterCategory, setOpenFilterCategory] = useState<string | null>(null);
 
   // Artist profile data
@@ -84,11 +93,14 @@ const StudiosPage = () => {
   useEffect(() => {
     async function fetchStudios() {
       try {
+        setIsFetchingStudios(true);
         const data = await getAllStudios();
         setStudios(data);
         console.log("studio data is working");
       } catch (err) {
         console.error(err);
+      } finally {
+        setIsFetchingStudios(false);
       }
     }
     fetchStudios();
@@ -116,8 +128,13 @@ const StudiosPage = () => {
   useEffect(() => {
     async function fetchMiniProfile() {
       try {
-        const id = 1;
-        const data = await getMiniProfile(id);
+        const rawArtistId = localStorage.getItem("artist_id");
+        if (!rawArtistId) return;
+
+        const artistId = Number(rawArtistId);
+        if (!Number.isFinite(artistId)) return;
+
+        const data = await getMiniProfile(artistId);
         setArtistProfile(data);
         console.log("profile data is working");
       } catch (err) {
@@ -218,31 +235,28 @@ const StudiosPage = () => {
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
               <FaFire className="text-orange-500 text-xl" />
-              <h3 className="text-lg font-bold text-white font-special">Featured Studios</h3>
+              <h3 className="text-lg font-bold text-white font-special">{t('studios.featuredStudios')}</h3>
               <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded-full">
-                Local Favorites
+                {t('studios.localFavorites')}
               </span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="flex flex-col gap-4">
               {featuredStudios.slice(0, 3).map(studio => (
-                  <StudioCard key={studio.id} studio={studio} href={`/pages/client/studios/studio-details/${studio.id}`} />
+                <StudioCard key={studio.id} studio={studio} href={`/pages/client/studios/studio-details/${studio.id}`} showInfo variant="row" />
               ))}
             </div>
           </div>
         )}
         
         {/* Main Studios Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {rankedStudios.map(studio => (
-            <motion.div
+        <div className="flex flex-col gap-6">
+          {rankedStudios.map(studio => (
+            <div
               key={studio.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="relative"
+              className="relative w-full"
             >
-              <StudioCard studio={studio} href={`/pages/client/studios/studio-details/${studio.id}`} />
-            </motion.div>
+              <StudioCard studio={studio} href={`/pages/client/studios/studio-details/${studio.id}`} showInfo variant="row" />
+            </div>
           ))}
         </div>
       </div>
@@ -251,6 +265,11 @@ const StudiosPage = () => {
 
   // Filter studios based on search and filters - KEEPING ALL YOUR ORIGINAL FILTERS
   useEffect(() => {
+    if (isFetchingStudios) {
+      setLoading(true);
+      return;
+    }
+
     setLoading(true);
     
     const timer = setTimeout(() => {
@@ -314,7 +333,7 @@ const StudiosPage = () => {
     }, 500);
     
     return () => clearTimeout(timer);
-  }, [studios, searchTerm, filters]);
+  }, [isFetchingStudios, studios, searchTerm, filters]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -366,6 +385,8 @@ const StudiosPage = () => {
 
   // Enhanced Dashboard Section with studio details and perks
   const EnhancedDashboardSection = ({ bookings }: { bookings: Booking[] }) => {
+    const [expandedBookingId, setExpandedBookingId] = useState<number | null>(null);
+
     const bookingsWithStudioDetails = useMemo(() => {
       return bookings.map(booking => {
         const studio = studios.find(s => s.id === booking.studio.id);
@@ -373,9 +394,9 @@ const StudiosPage = () => {
           ...booking,
           studio: studio || {
             id: 0,
-            name: "Unknown Studio",
+            name: t('studios.unknownStudio'),
             avatar: "/studio/avatar.png",
-            location: "Location not available",
+            location: t('studios.locationNotAvailable'),
             genres: [],
             rating: 0,
             price: 0,
@@ -388,8 +409,8 @@ const StudiosPage = () => {
 
     return (
       <div className="space-y-6">
-        <div className="bg-gray-800/30 backdrop-blur-lg rounded-2xl border border-gray-700 p-6">
-          <h2 className="text-2xl font-bold text-white mb-6 font-special">My Bookings</h2>
+        <div className="lux-card lux-rect p-6">
+          <h2 className="text-2xl font-bold text-white mb-6 font-special">{t('bookings.myBookingsTitle')}</h2>
           
           {bookingsWithStudioDetails.length === 0 ? (
             <div className="text-center py-12">
@@ -398,28 +419,37 @@ const StudiosPage = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-white mb-2 font-special-regular">No bookings yet</h3>
+              <h3 className="text-xl font-semibold text-white mb-2 font-special-regular">{t('bookings.noBookingsTitle')}</h3>
               <p className="text-gray-500 max-w-md mx-auto font-special-regular">
-                You haven't made any bookings yet. Start exploring studios to book your first session.
+                {t('bookings.noBookingsBody')}
               </p>
             </div>
           ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {bookingsWithStudioDetails.map((booking) => {
                 const perk = STUDIO_PERKS[booking.studio.level! as keyof typeof STUDIO_PERKS] || STUDIO_PERKS[1];
+                const isExpanded = expandedBookingId === booking.bookingId;
+                const statusLabel =
+                  booking.status === true
+                    ? t('bookings.confirmed')
+                    : booking.status === false
+                      ? t('bookings.pending')
+                      : String(booking.status);
                 
                 return (
-                  <div key={booking.bookingId} className="bg-gray-900/50 backdrop-blur rounded-2xl p-6 border border-gray-700/50 transition-all hover:border-purple-500/50">
+                  <div key={booking.bookingId} className="group lux-card lux-rect lux-tilt p-6">
                     <div className="flex flex-col md:flex-row gap-6">
                       <div className="w-full md:w-48 h-48 flex-shrink-0 relative">
                         <img
                           src={booking.studio.avatar}
                           alt={booking.studio.name}
                           className="w-full h-full object-cover rounded-xl"
+                          loading="lazy"
+                          decoding="async"
                         />
-                        {perk.badge && (
-                          <div className="absolute top-2 right-2 bg-black/70 backdrop-blur rounded-full px-2 py-1 text-xs font-bold text-white">
-                            {perk.badge}
+                        {perk.badgeKey && (
+                          <div className="absolute top-2 right-2 bg-black/70 backdrop-blur rounded-full px-2 py-1 text-xs font-bold text-white border border-white/10">
+                            {t(perk.badgeKey)}
                           </div>
                         )}
                       </div>
@@ -432,29 +462,31 @@ const StudiosPage = () => {
                               <FaMapMarkerAlt className="mr-2 text-purple-400" />
                               <span>{booking.studio.location}</span>
                               <span className="mx-2">•</span>
-                              <span className="text-sm text-gray-500">Level {booking.studio.level!}</span>
+                              <span className="text-sm text-gray-500">
+                                {t('studios.level', { level: booking.studio.level! })}
+                              </span>
                             </div>
                           </div>
                           <div className="flex-shrink-0">
-                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                              booking.status === true ? 'bg-green-500/20 text-green-400' :
-                              booking.status === false ? 'bg-yellow-500/20 text-yellow-400' :
-                              'bg-red-500/20 text-red-400'
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${
+                              booking.status === true ? 'bg-green-500/15 text-green-300 border-green-500/25' :
+                              booking.status === false ? 'bg-yellow-500/15 text-yellow-300 border-yellow-500/25' :
+                              'bg-red-500/15 text-red-300 border-red-500/25'
                             }`}>
-                              {booking.status}
+                              {statusLabel}
                             </span>
                           </div>
                         </div>
 
                         <div className="flex flex-wrap gap-2 mb-4">
                           {booking.studio.genres.slice(0, 3).map((genre, index) => (
-                            <span key={index} className="bg-purple-900/30 text-purple-300 text-xs px-3 py-1.5 rounded-full">
+                            <span key={index} className="lux-chip border-white/10 bg-black/30 text-white/75">
                               {genre}
                             </span>
                           ))}
                           {booking.studio.genres.length > 3 && (
-                            <span className="bg-gray-800 text-gray-400 text-xs px-3 py-1.5 rounded-full">
-                              +{booking.studio.genres.length - 3} more
+                            <span className="lux-chip border-white/10 bg-black/25 text-white/65">
+                              {t('common.moreCount', { count: booking.studio.genres.length - 3 })}
                             </span>
                           )}
                         </div>
@@ -462,50 +494,97 @@ const StudiosPage = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm mb-4">
                           <div>
                             <p className="text-gray-500 flex items-center">
-                              <FaCalendarAlt className="mr-2" />
-                              Date
+                              <FaCalendarAlt className="mr-2 lux-icon-metal" />
+                              {t('booking.date')}
                             </p>
-                            <p className="text-white">{new Date(booking.bookingDate).toLocaleDateString("en-CA")}</p>
+                            <p className="text-white">{formatHumanDate(booking.bookingDate)}</p>
                           </div>
                           <div>
                             <p className="text-gray-500 flex items-center">
-                              <FaClock className="mr-2" />
-                              Time
+                              <FaClock className="mr-2 lux-icon-metal" />
+                              {t('booking.time')}
                             </p>
-                            <p className="text-white">{booking.bookingTime.toLocaleString()}</p>
+                            <p className="text-white">{formatHumanTimeRange(booking.bookingTime)}</p>
                           </div>
                         </div>
 
                         <div className="mb-4">
-                          <p className="text-gray-500 text-sm mb-2">Featured Equipment:</p>
+                          <p className="text-gray-500 text-sm mb-2">{t('studios.featuredEquipment')}</p>
                           <div className="flex flex-wrap gap-2">
                             {booking.studio.equipment.slice(0, 2).map((item, index) => (
-                              <span key={index} className="bg-blue-900/30 text-blue-300 text-xs px-2 py-1 rounded-full">
+                              <span key={index} className="lux-chip border-white/10 bg-black/25 text-white/70">
                                 {item}
                               </span>
                             ))}
                             {booking.studio.equipment.length > 2 && (
-                              <span className="bg-gray-800 text-gray-400 text-xs px-2 py-1 rounded-full">
-                                +{booking.studio.equipment.length - 2} more
+                              <span className="lux-chip border-white/10 bg-black/25 text-white/65">
+                                {t('common.moreCount', { count: booking.studio.equipment.length - 2 })}
                               </span>
                             )}
                           </div>
                         </div>
 
-                        <div className="flex justify-between items-center pt-4 border-t border-gray-700/50">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-white/10">
                           <div className="flex items-center">
                             <FaStar className="text-yellow-400 mr-1" />
                             <span className="text-white">{booking.studio.rating}</span>
                             <span className="text-gray-500 mx-2">•</span>
                             <span className="text-purple-400 font-bold">${booking.studio.price}/hr</span>
                           </div>
-                          <button 
-                            onClick={() => goToStudioBooking(booking.studio.id)} 
-                            className="text-sm bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-xl transition-all"
-                          >
-                            View Studio Details
-                          </button>
+                          <div className="flex flex-wrap items-center gap-2 justify-start sm:justify-end">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setExpandedBookingId((prev) => (prev === booking.bookingId ? null : booking.bookingId))
+                              }
+                              className="lux-btn-ghost px-4 py-2 text-sm font-medium"
+                            >
+                              {isExpanded ? t('bookings.hideBookingDetails') : t('bookings.viewBookingDetails')}
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={() => goToStudioBooking(booking.studio.id)} 
+                              className="lux-btn-metal px-4 py-2 text-sm font-medium"
+                            >
+                              {t('common.viewStudio')}
+                            </button>
+                          </div>
                         </div>
+
+                        <AnimatePresence initial={false}>
+                          {isExpanded ? (
+                            <motion.div
+                              initial={{ opacity: 0, y: -8 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -8 }}
+                              transition={{ duration: 0.18, ease: [0.2, 0.8, 0.2, 1] }}
+                              className="mt-4"
+                            >
+                              <div className="lux-card lux-rect p-4 bg-black/20">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <span className="text-white/65 font-special-regular">{t('bookings.bookingId')}</span>
+                                    <span className="text-white font-special-regular">#{booking.bookingId}</span>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-3">
+                                    <span className="text-white/65 font-special-regular">{t('booking.guests')}</span>
+                                    <span className="text-white font-special-regular">{booking.nbrGuests}</span>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-3">
+                                    <span className="text-white/65 font-special-regular">{t('booking.service')}</span>
+                                    <span className="text-white font-special-regular">
+                                      {String(booking.service?.name ?? t('common.notAvailable'))}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-3">
+                                    <span className="text-white/65 font-special-regular">{t('bookings.status')}</span>
+                                    <span className="text-white font-special-regular">{statusLabel}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </motion.div>
+                          ) : null}
+                        </AnimatePresence>
                       </div>
                     </div>
                   </div>
@@ -520,9 +599,9 @@ const StudiosPage = () => {
 
   // Tab navigation items
   const tabs = [
-    { id: 'search', label: 'Search Studios', color: 'purple' },
-    { id: 'dashboard', label: 'My Bookings', color: 'blue' },
-    { id: 'points', label: 'My Points', color: 'yellow' },
+    { id: 'search', label: t('studios.tabs.searchStudios'), color: 'purple' },
+    { id: 'dashboard', label: t('studios.tabs.myBookings'), color: 'blue' },
+    { id: 'points', label: t('studios.tabs.myPoints'), color: 'yellow' },
   ];
 
   // Sample data for filter options - KEEPING ALL YOUR ORIGINAL OPTIONS
@@ -534,16 +613,12 @@ const StudiosPage = () => {
   const languageOptions = ['English', 'Spanish', 'French', 'German', 'Japanese'];
 
   return (
-      <div className="min-h-screen relative overflow-hidden bg-gray-900">
-        {/* Enhanced Animated Gradient Background */}
-        <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#0f0f0f] via-[#132257] to-[#777777] animate-gradient "></div>
-          <div className="blur-3xl absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(126,34,206,0.15)_0%,_transparent_70%)] animate-pulse-slow"></div>
-          <div className="blur-2xl absolute inset-0 bg-[conic-gradient(from_90deg_at_50%_50%,#0f0f0f,#7e22ce,#0f0f0f,#2563eb,#0f0f0f)] opacity-30 animate-rotate"></div>
-        </div>
-        
-        {/* Top Navigation Bar */}
-        <div className="relative z-20 w-full">
+      <div className="min-h-screen relative overflow-hidden bg-gray-950 text-white lux-rect">
+         <ClientBackdrop />
+         <ClientStudiosBackdrop />
+         
+         {/* Top Navigation Bar */}
+         <div className="relative z-20 w-full">
           <div className="max-w-7xl mx-auto px-2 sm:px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="w-full md:w-[15%] flex justify-start">
               <img 
@@ -554,12 +629,12 @@ const StudiosPage = () => {
             </div>
 
             <div className="w-full md:w-[70%] flex justify-center">
-              <div className="relative bg-gray-800/50 backdrop-blur-2xl rounded-full p-1 border border-gray-500 border-t-white/30 border-l-white/30 shadow-2xl w-full md:w-auto">
+              <div className="lux-card lux-rect p-1 shadow-2xl w-full md:w-auto bg-black/35 border-white/10">
                 <div className="flex flex-wrap md:flex-nowrap justify-center md:space-x-1 gap-1">
                   {tabs.map((tab) => (
                     <button
                       key={tab.id}
-                      className={`relative px-4 md:px-5 py-2.5 rounded-full text-sm font-special transition-colors duration-300 ${
+                      className={`relative px-4 md:px-5 py-2.5 rounded-xl text-sm font-special transition-colors duration-300 ${
                         activeTab === tab.id
                           ? "text-white opacity-100 drop-shadow-[0_0_8px_rgba(147,51,234,0.8)]"
                           : "text-white opacity-50 hover:text-gray-400"
@@ -568,7 +643,7 @@ const StudiosPage = () => {
                     >
                       {activeTab === tab.id && (
                         <motion.div
-                          className="absolute inset-0 rounded-full bg-purple-600/30 backdrop-blur-3xl z-0"
+                          className="absolute inset-0 rounded-xl bg-white/6 backdrop-blur-3xl z-0 border border-white/10 shadow-[0_0_22px_rgba(207,210,218,0.12)]"
                           layoutId="activeTab"
                           transition={{ type: "spring", stiffness: 300, damping: 30 }}
                         />
@@ -610,7 +685,7 @@ const StudiosPage = () => {
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.1, duration: 0.5 }}
             >
-              Discover Your Creative Space
+              {t('studios.heroTitle')}
             </motion.h1>
             <motion.p 
               className="text-gray-400 max-w-2xl mx-auto text-lg font-special-regular"
@@ -618,7 +693,7 @@ const StudiosPage = () => {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.5 }}
             >
-              Find the perfect studio for your next masterpiece. Book, create, and grow.
+              {t('studios.heroSubtitle')}
             </motion.p>
           </motion.div>
           
@@ -643,22 +718,24 @@ const StudiosPage = () => {
                     onHoverEnd={() => setExpanded(false)}
                   >
                     <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-xl font-bold text-white flex items-center font-special">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-400 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                        Recommendations For You
-                      </h2>
-                      <p className="text-gray-500 text-xs hidden md:block">Based on your preferences</p>
-                    </div>
+                       <h2 className="text-xl font-bold text-white flex items-center font-special">
+                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-400 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                         </svg>
+                         {t('studios.recommendationsForYou')}
+                       </h2>
+                       <p className="text-gray-500 text-xs hidden md:block">{t('studios.basedOnYourPreferences')}</p>
+                     </div>
                     
                     <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 backdrop-blur-sm rounded-xl border border-gray-500 border-t-white/30 border-l-white/30 md:p-8 shadow-2xl p-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="flex flex-col gap-4">
                         {recommendedStudios.slice(0, 3).map(studio => (
                           <StudioCard
                             key={studio.id}
                             studio={studio}
                             href={`/pages/client/studios/studio-details/${studio.id}`}
+                            showInfo
+                            variant="row"
                           />
                         ))}
                       </div>
@@ -678,7 +755,7 @@ const StudiosPage = () => {
                               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-400 mr-2" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                               </svg>
-                              Recommended For You Based On Your Profile
+                              {t('studios.recommendedTitle')}
                             </h2><br />
                             <EnhancedStudioCardGrid studios={recommendedStudios} />
                           </div>
@@ -688,7 +765,7 @@ const StudiosPage = () => {
                   </motion.div>
                 )}
                 
-                <div className="bg-gray-800/30 backdrop-blur-lg rounded-2xl border border-gray-500 border-t-white/30 border-l-white/30 p-6 md:p-8 shadow-2xl">
+                <div className="lux-card lux-rect p-6 md:p-8 shadow-2xl">
                   <div className="flex flex-col lg:flex-row gap-6">
                     
                     
@@ -702,56 +779,56 @@ const StudiosPage = () => {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                           </div>
-                          <input
-                            type="text"
-                            placeholder="Search studios by name, location, or genre..."
-                            className="w-full bg-gray-900/70 backdrop-blur border border-gray-700 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent transition-all"
-                            value={searchTerm}
-                            onChange={handleSearch}
-                          />
+                            <input
+                              type="text"
+                              placeholder={t('studios.searchPlaceholder')}
+                              className="lux-input pl-10 placeholder-white/35"
+                              value={searchTerm}
+                              onChange={handleSearch}
+                            />
                         </div>
                         <button 
-                          className="lg:hidden bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-xl flex items-center justify-center transition-all font-special-regular"
+                          className="lg:hidden lux-btn-ghost py-3 px-4 rounded-xl flex items-center justify-center transition-all font-special-regular"
                           onClick={() => setShowFilters(!showFilters)}
                         >
                           {showFilters ? (
                             <>
                               <FaTimes className="h-5 w-5 mr-2" />
-                              Hide Filters
+                              {t('studios.hideFilters')}
                             </>
                           ) : (
                             <>
                               <FaFilter className="h-5 w-5 mr-2" />
-                              Show Filters
+                              {t('studios.showFilters')}
                             </>
                           )}
                         </button>
                       </div>
                       
                       {/* Horizontal Filter Bar for Desktop - KEEPING ALL YOUR ORIGINAL FILTERS */}
-                      <div className="hidden lg:flex flex-wrap gap-3 mb-6 bg-gray-900/70 backdrop-blur rounded-xl p-4 border border-gray-700/50 relative z-30">
+                      <div className="hidden lg:flex flex-wrap gap-3 mb-6 lux-card lux-rect p-4 bg-black/25 border-white/10 relative z-30">
                         {/* Location Filter */}
                         <div className="relative group">
 
                           
                           <button 
-                            className="flex items-center gap-2 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 py-2 px-4 rounded-xl transition-all text-sm"
+                            className="lux-btn-ghost flex items-center gap-2 py-2 px-4 rounded-xl transition-all text-sm text-white/80"
                             onClick={() => toggleFilterCategory('location')}
                           >
                             <FaMapMarkerAlt className="text-purple-400" />
-                            Location
+                            {t('studios.location')}
                             <FaChevronDown className={`text-xs transition-transform ${openFilterCategory === 'location' ? 'rotate-180' : ''}`} />
                           </button>
                           {openFilterCategory === 'location' && (
-                            <div className="absolute top-full left-0 mt-2 z-50 bg-gray-800/90 backdrop-blur-lg rounded-xl p-4 min-w-[250px] shadow-2xl border border-gray-700">
+                            <div className="absolute top-full left-0 mt-2 z-50 lux-popover lux-rect p-4 min-w-[250px] shadow-2xl">
                               <div className="relative">
                                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
                                   <FaMapMarkerAlt className="h-4 w-4" />
                                 </div>
                                 <input
                                   type="text"
-                                  placeholder="Enter location"
-                                  className="w-full bg-gray-700/70 border border-gray-600 rounded-lg py-2 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent text-sm"
+                                  placeholder={t('studios.enterLocation')}
+                                  className="lux-input pl-10 pr-4 text-sm placeholder-white/35"
                                   value={filters.location}
                                   onChange={(e) => handleFilterChange('location', e.target.value)}
                                 />
@@ -763,23 +840,23 @@ const StudiosPage = () => {
                         {/* Genre Filter */}
                         <div className="relative group">
                           <button 
-                            className="flex items-center gap-2 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 py-2 px-4 rounded-xl transition-all text-sm"
+                            className="lux-btn-ghost flex items-center gap-2 py-2 px-4 rounded-xl transition-all text-sm text-white/80"
                             onClick={() => toggleFilterCategory('genre')}
                           >
                             <FaMusic className="text-purple-400" />
-                            Genre
+                            {t('studios.genre')}
                             <FaChevronDown className={`text-xs transition-transform ${openFilterCategory === 'genre' ? 'rotate-180' : ''}`} />
                           </button>
                           {openFilterCategory === 'genre' && (
-                            <div className="absolute top-full left-0 mt-2 z-50 bg-gray-800/90 backdrop-blur-lg rounded-xl p-4 min-w-[250px] shadow-2xl border border-gray-700">
+                            <div className="absolute top-full left-0 mt-2 z-50 lux-popover lux-rect p-4 min-w-[250px] shadow-2xl">
                               <div className="relative">
                                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
                                   <FaMusic className="h-4 w-4" />
                                 </div>
                                 <input
                                   type="text"
-                                  placeholder="Search genre"
-                                  className="w-full bg-gray-700/70 border border-gray-600 rounded-lg py-2 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent text-sm"
+                                  placeholder={t('studios.searchGenre')}
+                                  className="lux-input pl-10 pr-4 text-sm placeholder-white/35"
                                   value={filters.genre}
                                   onChange={(e) => handleFilterChange('genre', e.target.value)}
                                 />
@@ -791,15 +868,15 @@ const StudiosPage = () => {
                         {/* Price Range Filter */}
                         <div className="relative group">
                           <button 
-                            className="flex items-center gap-2 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 py-2 px-4 rounded-xl transition-all text-sm"
+                            className="lux-btn-ghost flex items-center gap-2 py-2 px-4 rounded-xl transition-all text-sm text-white/80"
                             onClick={() => toggleFilterCategory('price')}
                           >
                             <span className="text-purple-400">$</span>
-                            Price
+                            {t('studios.price')}
                             <FaChevronDown className={`text-xs transition-transform ${openFilterCategory === 'price' ? 'rotate-180' : ''}`} />
                           </button>
                           {openFilterCategory === 'price' && (
-                            <div className="absolute top-full left-0 mt-2 z-50 bg-gray-800/90 backdrop-blur-lg rounded-xl p-4 min-w-[300px] shadow-2xl border border-gray-700">
+                            <div className="absolute top-full left-0 mt-2 z-50 lux-popover lux-rect p-4 min-w-[300px] shadow-2xl">
                               <div className="space-y-4">
                                 <div>
                                   <label className="block text-xs text-gray-400 mb-2">
@@ -860,7 +937,7 @@ const StudiosPage = () => {
                         {/* Availability Filter */}
                         <div className="relative group">
                           <button 
-                            className="flex items-center gap-2 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 py-2 px-4 rounded-xl transition-all text-sm"
+                            className="lux-btn-ghost flex items-center gap-2 py-2 px-4 rounded-xl transition-all text-sm text-white/80"
                             onClick={() => toggleFilterCategory('availability')}
                           >
                             <FaCalendarAlt className="text-purple-400" />
@@ -868,7 +945,7 @@ const StudiosPage = () => {
                             <FaChevronDown className={`text-xs transition-transform ${openFilterCategory === 'availability' ? 'rotate-180' : ''}`} />
                           </button>
                           {openFilterCategory === 'availability' && (
-                            <div className="absolute top-full left-0 mt-2 z-50 bg-gray-800/90 backdrop-blur-lg rounded-xl p-4 min-w-[200px] shadow-2xl border border-gray-700">
+                            <div className="absolute top-full left-0 mt-2 z-50 lux-popover lux-rect p-4 min-w-[200px] shadow-2xl">
                               <div className="space-y-2">
                                 {availabilityOptions.map(day => (
                                   <label key={day} className="flex items-center text-sm text-gray-300">
@@ -889,7 +966,7 @@ const StudiosPage = () => {
                         {/* Services Filter */}
                         <div className="relative group">
                           <button 
-                            className="flex items-center gap-2 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 py-2 px-4 rounded-xl transition-all text-sm"
+                            className="lux-btn-ghost flex items-center gap-2 py-2 px-4 rounded-xl transition-all text-sm text-white/80"
                             onClick={() => toggleFilterCategory('services')}
                           >
                             <FaMusic className="text-purple-400" />
@@ -897,7 +974,7 @@ const StudiosPage = () => {
                             <FaChevronDown className={`text-xs transition-transform ${openFilterCategory === 'services' ? 'rotate-180' : ''}`} />
                           </button>
                           {openFilterCategory === 'services' && (
-                            <div className="absolute top-full left-0 mt-2 z-50 bg-gray-800/90 backdrop-blur-lg rounded-xl p-4 min-w-[200px] shadow-2xl border border-gray-700">
+                            <div className="absolute top-full left-0 mt-2 z-50 lux-popover lux-rect p-4 min-w-[200px] shadow-2xl">
                               <div className="space-y-2">
                                 {serviceOptions.map(service => (
                                   <label key={service} className="flex items-center text-sm text-gray-300">
@@ -918,19 +995,19 @@ const StudiosPage = () => {
                         {/* More Filters Button */}
                         <div className="relative group">
                           <button 
-                            className="flex items-center gap-2 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 py-2 px-4 rounded-xl transition-all text-sm"
+                            className="lux-btn-ghost flex items-center gap-2 py-2 px-4 rounded-xl transition-all text-sm text-white/80"
                             onClick={() => toggleFilterCategory('more')}
                           >
                             <FaFilter className="text-purple-400" />
-                            More Filters
+                            {t('studios.moreFilters')}
                             <FaChevronDown className={`text-xs transition-transform ${openFilterCategory === 'more' ? 'rotate-180' : ''}`} />
                           </button>
                           {openFilterCategory === 'more' && (
-                            <div className="absolute top-full right-0 mt-2 z-50 bg-gray-800/90 backdrop-blur-lg rounded-xl p-4 w-[300px] shadow-2xl border border-gray-700">
+                            <div className="absolute top-full right-0 mt-2 z-50 lux-popover lux-rect p-4 w-[300px] shadow-2xl">
                               <div className="grid grid-cols-2 gap-4">
                                 {/* Amenities Filter */}
                                 <div>
-                                  <h4 className="text-sm font-medium text-white mb-2">Amenities</h4>
+                                  <h4 className="text-sm font-medium text-white mb-2">{t('studios.amenities')}</h4>
                                   <div className="space-y-2">
                                     {amenityOptions.map(amenity => (
                                       <label key={amenity} className="flex items-center text-xs text-gray-300">
@@ -948,7 +1025,7 @@ const StudiosPage = () => {
                                 
                                 {/* Equipment Filter */}
                                 <div>
-                                  <h4 className="text-sm font-medium text-white mb-2">Equipment</h4>
+                                  <h4 className="text-sm font-medium text-white mb-2">{t('studios.equipment')}</h4>
                                   <div className="space-y-2">
                                     {equipmentOptions.slice(0, 3).map(equipment => (
                                       <label key={equipment} className="flex items-center text-xs text-gray-300">
@@ -971,10 +1048,10 @@ const StudiosPage = () => {
                         {/* Reset Filters Button */}
                         <button 
                           onClick={resetFilters}
-                          className="flex items-center gap-2 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 py-2 px-4 rounded-xl transition-all text-sm"
+                          className="lux-btn-ghost flex items-center gap-2 py-2 px-4 rounded-xl transition-all text-sm text-white/80"
                         >
                           <FaTimes className="text-purple-400" />
-                          Clear All Filters
+                          {t('studios.clearAllFilters')}
                         </button>
                       </div>
                       
@@ -982,72 +1059,93 @@ const StudiosPage = () => {
                       <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                         <div>
                           <h2 className="text-xl font-special-regular text-white">
-                            {filteredStudios.length} Studio{filteredStudios.length !== 1 ? 's' : ''} Found
+                            {(() => {
+                              const count = filteredStudios.length;
+                              const category = new Intl.PluralRules(locale).select(count);
+                              const safeCategory =
+                                category === 'one' || category === 'few' || category === 'many'
+                                  ? category
+                                  : 'other';
+                              return t(`studios.resultsCount.${safeCategory}`, { count });
+                            })()}
                           </h2>
                           <p className="text-gray-500 text-sm font-special-regular">
-                            {filters.location ? `in ${filters.location}` : 'Worldwide'} • 
-                            {filters.genre ? ` ${filters.genre} genre` : ' All genres'}
+                            {filters.location
+                              ? t('studios.inLocation', { location: filters.location })
+                              : t('studios.worldwide')}{' '}
+                            •{' '}
+                            {filters.genre
+                              ? t('studios.genreSelected', { genre: filters.genre })
+                              : t('studios.allGenres')}
                           </p>
                         </div>
                       </div>
                       
-                      {/* Loading Skeleton */}
-                      {loading && (
-                        <div className="space-y-6">
-                          {[1, 2, 3].map((item) => (
+                      {isFetchingStudios ? (
+                        <div className="flex items-center justify-center py-16">
+                          <LuxSpinner label={t('studios.loadingStudios')} />
+                        </div>
+                      ) : (
+                        <>
+                          {/* Loading Skeleton */}
+                          {loading && (
+                            <div className="space-y-6">
+                              {[1, 2, 3].map((item) => (
+                                <motion.div 
+                                  key={item}
+                                  className="bg-gray-900/50 backdrop-blur rounded-2xl p-6"
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  transition={{ duration: 0.3 }}
+                                >
+                                  <div className="flex flex-col md:flex-row gap-6 animate-pulse">
+                                    <div className="bg-gray-800 rounded-xl w-full md:w-64 h-48"></div>
+                                    <div className="flex-1 space-y-4">
+                                      <div className="h-6 bg-gray-800 rounded w-1/3"></div>
+                                      <div className="h-4 bg-gray-800 rounded w-1/4"></div>
+                                      <div className="flex flex-wrap gap-2">
+                                        {[1, 2, 3].map(tag => (
+                                          <div key={tag} className="h-6 bg-gray-800 rounded-full w-16"></div>
+                                        ))}
+                                      </div>
+                                      <div className="h-4 bg-gray-800 rounded w-3/4"></div>
+                                      <div className="h-4 bg-gray-800 rounded w-2/3"></div>
+                                    </div>
+                                  </div>
+                                </motion.div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {/* Results */}
+                          {!loading && filteredStudios.length > 0 ? (
+                            <EnhancedStudioCardGrid studios={filteredStudios} />
+                          ) : !loading ? (
                             <motion.div 
-                              key={item}
-                              className="bg-gray-900/50 backdrop-blur rounded-2xl p-6"
+                              className="text-center py-12"
                               initial={{ opacity: 0 }}
                               animate={{ opacity: 1 }}
-                              transition={{ duration: 0.3 }}
+                              transition={{ duration: 0.5 }}
                             >
-                              <div className="flex flex-col md:flex-row gap-6 animate-pulse">
-                                <div className="bg-gray-800 rounded-xl w-full md:w-64 h-48"></div>
-                                <div className="flex-1 space-y-4">
-                                  <div className="h-6 bg-gray-800 rounded w-1/3"></div>
-                                  <div className="h-4 bg-gray-800 rounded w-1/4"></div>
-                                  <div className="flex flex-wrap gap-2">
-                                    {[1, 2, 3].map(tag => (
-                                      <div key={tag} className="h-6 bg-gray-800 rounded-full w-16"></div>
-                                    ))}
-                                  </div>
-                                  <div className="h-4 bg-gray-800 rounded w-3/4"></div>
-                                  <div className="h-4 bg-gray-800 rounded w-2/3"></div>
-                                </div>
+                              <div className="bg-gray-900/50 backdrop-blur rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
                               </div>
+                              <h3 className="text-xl font-semibold text-white mb-2 font-special-regular">{t('studios.noStudiosTitle')}</h3>
+                              <p className="text-gray-500 max-w-md mx-auto mb-6 font-special-regular">
+                                {t('studios.noStudiosBody')}
+                              </p>
+                              <button 
+                                onClick={resetFilters}
+                                className="bg-purple-600 hover:bg-purple-700 text-white py-2.5 px-6 rounded-xl transition-all transform hover:-translate-y-0.5 font-special-regular"
+                              >
+                                {t('studios.resetFilters')}
+                              </button>
                             </motion.div>
-                          ))}
-                        </div>
+                          ) : null}
+                        </>
                       )}
-                      
-                      {/* Results */}
-                      {!loading && filteredStudios.length > 0 ? (
-                        <EnhancedStudioCardGrid studios={filteredStudios} />
-                      ) : !loading ? (
-                        <motion.div 
-                          className="text-center py-12"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ duration: 0.5 }}
-                        >
-                          <div className="bg-gray-900/50 backdrop-blur rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                          </div>
-                          <h3 className="text-xl font-semibold text-white mb-2 font-special-regular">No studios found</h3>
-                          <p className="text-gray-500 max-w-md mx-auto mb-6 font-special-regular">
-                            Try adjusting your search or filters. We couldn't find any studios matching your criteria.
-                          </p>
-                          <button 
-                            onClick={resetFilters}
-                            className="bg-purple-600 hover:bg-purple-700 text-white py-2.5 px-6 rounded-xl transition-all transform hover:-translate-y-0.5 font-special-regular"
-                          >
-                            Reset Filters
-                          </button>
-                        </motion.div>
-                      ) : null}
                     </div>
                   </div>
                 </div>
@@ -1081,56 +1179,6 @@ const StudiosPage = () => {
             )}
           </AnimatePresence>
         </div>
-        
-        {/* Global Styles */}
-        <style jsx global>{`
-          @keyframes gradient {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-          }
-          
-          @keyframes pulse-slow {
-            0%, 100% { opacity: 0.1; }
-            50% { opacity: 0.15; }
-          }
-          
-          @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-          }
-          
-          .animate-gradient {
-            background-size: 400% 400%;
-            animation: gradient 20s ease infinite;
-          }
-          
-          .animate-pulse-slow {
-            animation: pulse-slow 6s ease-in-out infinite;
-          }
-          
-          .animate-rotate {
-            animation: rotate 60s linear infinite;
-          }
-          
-          ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-          }
-          
-          ::-webkit-scrollbar-track {
-            background: rgba(15, 15, 15, 0.1);
-          }
-          
-          ::-webkit-scrollbar-thumb {
-            background: rgba(126, 34, 206, 0.5);
-            border-radius: 4px;
-          }
-          
-          ::-webkit-scrollbar-thumb:hover {
-            background: rgba(126, 34, 206, 0.8);
-          }
-        `}</style>
       </div>
   );
 };

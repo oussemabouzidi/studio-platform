@@ -17,6 +17,7 @@ import {
 } from 'react-icons/fa';
 import { Studio, User } from '../types';
 import {getStudios, getArtists, apiUpdateArtistStatus, apiupdateStudioStatus, apiupdateArtistVerification, getStats} from '../service/api.js'
+import LuxSpinner from '@/app/components/LuxSpinner';
 
 // Define types for the API response
 type GamificationData = {
@@ -521,7 +522,7 @@ const apiGamificationStats = stats?.gamification
     if (loading) {
       return (
         <div className="flex justify-center items-center h-64">
-          <div className="text-white text-xl">Loading statistics...</div>
+          <LuxSpinner label="Loading dashboard…" />
         </div>
       );
     }

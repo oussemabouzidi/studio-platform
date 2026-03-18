@@ -6,10 +6,12 @@ import { motion } from 'framer-motion';
 import { 
   FaStar, FaMusic, FaHeadphones, FaWifi, FaCoffee, FaParking, 
   FaCalendarAlt, FaClock, FaUserFriends, FaMapMarkerAlt, FaLanguage,
-  FaHeart, FaRegHeart
+  FaHeart, FaRegHeart, FaInstagram, FaYoutube
 } from 'react-icons/fa';
 import { FaStar as FaStarSolid, FaStarHalfAlt, FaRegStar } from 'react-icons/fa';
 import BookingDialog from '@/app/components/BookingDialog';
+import { formatHumanDateSmart } from '@/app/lib/datetime';
+import LuxSpinner from '@/app/components/LuxSpinner';
 
 type Studio = {
   id: number;
@@ -54,6 +56,35 @@ const StudioDetailsPage = ({ params }: { params?: Promise<{ id: string }> }) => 
   const [activeTab, setActiveTab] = useState('overview');
   const [showBookingDialog, setShowBookingDialog] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false); // Add favorite state
+
+  const toHttpsUrl = (raw: string) => {
+    const cleaned = raw.trim();
+    if (!cleaned) return "";
+    if (/^https?:\/\//i.test(cleaned)) return cleaned;
+    return `https://${cleaned}`;
+  };
+
+  const instagramUrl = (raw: string) => {
+    const cleaned = raw.trim().replace(/^@/, "");
+    if (!cleaned) return "";
+    if (/^https?:\/\//i.test(cleaned) || cleaned.includes("instagram.com")) {
+      return toHttpsUrl(cleaned);
+    }
+    return `https://instagram.com/${cleaned}`;
+  };
+
+  const youtubeUrl = (raw: string) => {
+    const cleaned = raw.trim();
+    if (!cleaned) return "";
+    if (
+      /^https?:\/\//i.test(cleaned) ||
+      cleaned.includes("youtube.com") ||
+      cleaned.includes("youtu.be")
+    ) {
+      return toHttpsUrl(cleaned);
+    }
+    return toHttpsUrl(cleaned);
+  };
 
   // Sample studio data with extended details
   const studiosData: Studio[] = [
@@ -170,47 +201,42 @@ const StudioDetailsPage = ({ params }: { params?: Promise<{ id: string }> }) => 
 
   useEffect(() => {
     let isMounted = true;
-    let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
     const loadStudio = async () => {
+      setLoading(true);
       const resolvedParams = await params;
       const id = resolvedParams?.id;
 
-      if (!isMounted || !id) {
+      if (!isMounted) {
         return;
       }
 
-      // Simulate API call
-      timeoutId = setTimeout(() => {
-        if (!isMounted) {
-          return;
-        }
-
-        const foundStudio = studiosData.find((s) => s.id === parseInt(id, 10));
-        setStudio(foundStudio || null);
+      if (!id) {
+        setStudio(null);
         setLoading(false);
+        return;
+      }
 
-        // Simulate checking if studio is favorite
-        // In a real app, this would come from an API
-        setIsFavorite(Math.random() > 0.5); // Random favorite status for demo
-      }, 500);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      if (!isMounted) return;
+
+      const foundStudio = studiosData.find((s) => s.id === parseInt(id, 10));
+      setStudio(foundStudio || null);
+      setIsFavorite(Math.random() > 0.5);
+      setLoading(false);
     };
 
     loadStudio();
 
     return () => {
       isMounted = false;
-
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
     };
   }, [params]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center lux-rect">
+        <LuxSpinner label="Loading studio…" />
       </div>
     );
   }
@@ -575,7 +601,7 @@ const StudioDetailsPage = ({ params }: { params?: Promise<{ id: string }> }) => 
                               {renderStars(review.rating)}
                             </div>
                           </div>
-                          <span className="text-gray-500 text-sm">{review.date}</span>
+                          <span className="text-gray-500 text-sm">{formatHumanDateSmart(review.date)}</span>
                         </div>
                         
                         <p className="text-gray-300 mt-4">{review.comment}</p>
@@ -669,12 +695,14 @@ const StudioDetailsPage = ({ params }: { params?: Promise<{ id: string }> }) => 
                     <div className="flex gap-4 mt-4">
                       {studio.contact.instagram && (
                         <a 
-                          href={`https://instagram.com/${studio.contact.instagram}`} 
+                          href={instagramUrl(studio.contact.instagram)} 
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-pink-500 hover:text-pink-400"
+                          className="lux-btn-ghost inline-flex items-center justify-center h-10 w-10 rounded-full border border-white/10 bg-black/25 hover:bg-white/5"
+                          aria-label="Instagram"
                         >
-                          Instagram
+                          <FaInstagram className="text-xl text-[#E1306C]" />
+                          <span className="sr-only">Instagram</span>
                         </a>
                       )}
                       
@@ -691,12 +719,14 @@ const StudioDetailsPage = ({ params }: { params?: Promise<{ id: string }> }) => 
                       
                       {studio.contact.youtube && (
                         <a 
-                          href={`https://${studio.contact.youtube}`} 
+                          href={youtubeUrl(studio.contact.youtube)} 
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-red-500 hover:text-red-400"
+                          className="lux-btn-ghost inline-flex items-center justify-center h-10 w-10 rounded-full border border-white/10 bg-black/25 hover:bg-white/5"
+                          aria-label="YouTube"
                         >
-                          YouTube
+                          <FaYoutube className="text-xl text-[#FF0000]" />
+                          <span className="sr-only">YouTube</span>
                         </a>
                       )}
                     </div>

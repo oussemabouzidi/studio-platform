@@ -50,6 +50,21 @@ export type Studio_details = {
   }[];
   rules?: string;
   cancellationPolicy?: string;
+  virtualTour?: {
+    scenes: {
+      id: string;
+      title: string;
+      imageUrl: string;
+      hotspots?: {
+        id: string;
+        label: string;
+        x: number;
+        y: number;
+        description?: string;
+        tags?: string[];
+      }[];
+    }[];
+  };
 };
 
 
@@ -129,7 +144,7 @@ export type Profile = {
     experienceLevel: 'beginner' | 'intermediate' | 'pro';
     yearsOfExperience: number | null;
     availability: string;
-    portfolio: { url: string; title: string; type: 'image' | 'video' | 'audio' }[];
+    portfolio: { id?: number; url: string; title: string; type: 'image' | 'video' | 'audio' }[];
   };
 
 export type DemoType = {
