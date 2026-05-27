@@ -79,8 +79,27 @@ export const createAccount = async (firstName, lastName, email, password) => {
     });
 
     if (!res.ok) {
-      const err = await readJsonSafe(res);
-      throw new Error((err && err.error) || "Failed to create account");
+      const errJson = await readJsonSafe(res);
+      const payload = (errJson && (errJson.error ?? errJson)) || null;
+
+      let message = "Failed to create account";
+      if (typeof payload === "string") message = payload;
+      else if (payload && typeof payload === "object") {
+        message =
+          payload.message ||
+          payload.sqlMessage ||
+          errJson?.message ||
+          errJson?.error ||
+          message;
+      } else if (errJson && typeof errJson.message === "string") {
+        message = errJson.message;
+      }
+
+      const e = new Error(message);
+      e.status = res.status;
+      e.payload = errJson;
+      e.details = payload;
+      throw e;
     }
 
     return await res.json(); // { message, userId }

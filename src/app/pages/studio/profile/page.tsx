@@ -89,6 +89,16 @@ type ListName = SimpleListName | 'additionalInfo';
 type StudioService = Service;
 
 export default function ManageStudioProfile() {
+  const router = useRouter(); // Initialize router
+  const [studioId, setStudioId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const raw =
+      typeof window !== "undefined" ? localStorage.getItem("studio_id") : null;
+    const n = raw != null ? Number(raw) : NaN;
+    setStudioId(Number.isFinite(n) && n > 0 ? Math.floor(n) : null);
+  }, []);
+
   // Initial studio profile data
   const [studioProfile, setStudioProfile] = useState<Studio>(emptyStudioProfile);
 
@@ -96,7 +106,8 @@ export default function ManageStudioProfile() {
   useEffect(() => {
     const fetchProfile = async () => {
       try{
-        const data = await getStudioManageProfile(1);
+        if (studioId == null) return;
+        const data = await getStudioManageProfile(studioId);
         const incoming = (data ?? {}) as Partial<Studio>;
 
         setStudioProfile((prev) => ({
@@ -127,7 +138,7 @@ export default function ManageStudioProfile() {
       }
     }
     fetchProfile();
-  }, [])
+  }, [studioId])
 
   const [newService, setNewService] = useState<StudioService>({
     id: 0,
@@ -787,14 +798,18 @@ export default function ManageStudioProfile() {
                       <div className="sm:col-span-2">
                         <span className="text-gray-500">Tags:</span>
                         <div className="flex flex-wrap gap-2 mt-1">
-                          {service.tags.split(',').map((tag, index) => (
-                            <span 
-                              key={index} 
-                              className="bg-purple-900/30 text-purple-300 text-xs px-2 py-1 rounded-full"
-                            >
-                              {tag.trim()}
-                            </span>
-                          ))}
+                          {(typeof service.tags === "string" ? service.tags : "")
+                            .split(",")
+                            .map((tag) => tag.trim())
+                            .filter(Boolean)
+                            .map((tag, index) => (
+                              <span
+                                key={`${tag}-${index}`}
+                                className="bg-purple-900/30 text-purple-300 text-xs px-2 py-1 rounded-full"
+                              >
+                                {tag}
+                              </span>
+                            ))}
                         </div>
                       </div>
                     </div>
@@ -1038,11 +1053,10 @@ export default function ManageStudioProfile() {
     }
   };
 
-  const router = useRouter(); // Initialize router
-
   const save = async () => {
     console.log(studioProfile);
-    const json_success = await updateStudioProfile(1, studioProfile);
+    if (studioId == null) return;
+    const json_success = await updateStudioProfile(studioId, studioProfile);
     if (json_success?.success) {
       console.log("settings data updated")
       setShowSuccess(true);

@@ -31,6 +31,7 @@ export default function SettingsPage() {
   // UI states
   const [activeTab, setActiveTab] = useState('payouts');
   const [showPassword, setShowPassword] = useState(false);
+  const [studioId, setStudioId] = useState<number | null>(null);
 
   // Consolidated data state
   const [settingsData, setSettingsData] = useState<SettingsData>({
@@ -73,9 +74,17 @@ export default function SettingsPage() {
 
   // get settings data
   useEffect(() => {
+    const raw =
+      typeof window !== "undefined" ? localStorage.getItem("studio_id") : null;
+    const n = raw != null ? Number(raw) : NaN;
+    setStudioId(Number.isFinite(n) && n > 0 ? Math.floor(n) : null);
+  }, []);
+
+  useEffect(() => {
     async function fetchSettings() {
       try {
-        const data = await getSettings(1);
+        if (studioId == null) return;
+        const data = await getSettings(studioId);
         setSettingsData(data);
         console.log(data);
         console.log("settings data is working");
@@ -84,13 +93,14 @@ export default function SettingsPage() {
       }
     }
     fetchSettings();
-  }, []);
+  }, [studioId]);
 
   const [showSuccess, setShowSuccess] = useState(false);
   const router = useRouter();
 
   const save = async () => {
-    const json_success = await updateSettings(1, settingsData);
+    if (studioId == null) return;
+    const json_success = await updateSettings(studioId, settingsData);
     if (json_success?.success) {
       console.log("settings data updated")
       setShowSuccess(true);

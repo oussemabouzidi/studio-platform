@@ -31,6 +31,19 @@ npm run dev
 
 Frontend runs on `http://localhost:3000` by default.
 
+## Studio ↔ Artist Chat (Next.js + Prisma)
+
+The chat feature is implemented as **Next.js Route Handlers** under `src/app/api/studio-chat/*` and persists messages via **Prisma** models `StudioChatThread` + `StudioChatMessage` (MySQL).
+
+### Database setup
+
+The chat tables live in the same MySQL database pointed to by `DATABASE_URL` (note: Prisma CLI loads env from `.env` by default).
+
+- Fresh database (Prisma-managed): `npm run db:migrate`
+- Existing non-empty database (already has other tables): `npm run db:chat:bootstrap`
+
+If you change `DATABASE_URL`, re-run the command against the new database.
+
 ## Media Uploads
 
 ### Local filesystem mode (default)

@@ -37,7 +37,8 @@
     "soundcloud": "SoundCloud",
     "youtube": "YouTube",
     "spotify": "Spotify",
-    "website": "Sitio web"
+    "website": "Sitio web",
+    "clientMessages": "Mensajes de clientes"
   },
   "home": {
     "navStudios": "Estudios",
@@ -213,8 +214,10 @@
       "services": "Servicios",
       "equipment": "Equipo",
       "amenities": "Comodidades",
-      "reviews": "Reseñas"
+      "reviews": "Reseñas",
+      "messages": "Mensajes"
     },
+    "messagesTitle": "Escribe al estudio",
     "aboutTitle": "Acerca de {studio}",
     "defaultDescription": "Un estudio premium diseñado para trabajo serio.",
     "studioTypes": "Tipos de estudio",
@@ -238,6 +241,38 @@
     "perHour": "/h",
     "bookNow": "Reservar ahora",
     "contactInformation": "Información de contacto"
+  },
+  "studioChat": {
+    "signInTitle": "Sign in to chat",
+    "signInBody": "Log in as an artist to send messages to this studio.",
+    "loading": "Loading…",
+    "intro": "Your conversation with {studio}. Replies appear here when the studio responds.",
+    "emptyArtist": "No messages yet. Say hello or ask a question below.",
+    "youLabel": "You",
+    "studioLabel": "Studio",
+    "placeholder": "Write your message…",
+    "sending": "Sending…",
+    "send": "Send"
+  },
+  "studioMessages": {
+    "title": "Client messages",
+    "subtitle": "Open a thread to read the full history and reply.",
+    "inboxTitle": "Inbox",
+    "profileMenuName": "Studio",
+    "missingStudioId": "We could not determine your studio account. Sign in again or open the dashboard from a studio login.",
+    "backDashboard": "Back to dashboard",
+    "emptyInbox": "No conversations yet. When an artist messages you from your studio page, it will appear here.",
+    "colThreadId": "Thread",
+    "colArtistId": "Artist",
+    "colPreview": "Last message",
+    "colUpdated": "Updated",
+    "colMessages": "Messages",
+    "msgCount": "msgs",
+    "selectThread": "Select a conversation from the list.",
+    "replyPlaceholder": "Write a reply to the artist…",
+    "sendReply": "Send reply",
+    "loadingThread": "Loading conversation…",
+    "artistLabel": "Artist"
   },
   "profile": {
     "tabs": {

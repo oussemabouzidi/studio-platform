@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaCog,
@@ -8,7 +9,10 @@ import {
   FaStar,
   FaEdit,
   FaTrash,
+  FaComments,
+  FaSyncAlt,
 } from "react-icons/fa";
+import { useT } from "@/app/i18n/useT";
 import NotificationDropdown from "@/app/components/NotificationDropdown";
 import StudioProfileDropdown from "@/app/components/StudioProfileDropdown";
 import { Booking, Service, Review, Studio, Earning } from "../types";
@@ -54,6 +58,7 @@ const emptyStudioData: Studio = {
 };
 
 const StudioDashboard = () => {
+  const t = useT();
   const [showTagSuggestions, setShowTagSuggestions] = useState(false);
   // Sample studio data
   const [studioData, setStudioData] = useState<Studio>(emptyStudioData);
@@ -72,15 +77,13 @@ const StudioDashboard = () => {
 
   const studioIdFromStorage = () => {
     const studioId = localStorage.getItem("studio_id");
-    if (studioId && !Number.isNaN(Number(studioId))) return Number(studioId);
-
-    const userId = localStorage.getItem("user_id");
-    if (userId && !Number.isNaN(Number(userId))) return Number(userId);
-
-    return 1;
+    const n = studioId != null ? Number(studioId) : NaN;
+    return Number.isFinite(n) && n > 0 ? Math.floor(n) : null;
   };
 
   const [studioId, setStudioId] = useState<number | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     setStudioId(studioIdFromStorage());
@@ -93,10 +96,9 @@ const StudioDashboard = () => {
       try {
         const data = await getBookings(studioId);
         setBookings(data);
-        console.log(data);
-        console.log("bookings data is working");
       } catch (err) {
         console.error(err);
+        setLoadError(err instanceof Error ? err.message : "Failed to load bookings");
       }
     }
     fetchBookings();
@@ -135,6 +137,9 @@ const StudioDashboard = () => {
         }));
       } catch (error) {
         console.log(error);
+        setLoadError(
+          error instanceof Error ? error.message : "Failed to load studio profile",
+        );
       }
     }
     async function fetchServices() {
@@ -147,6 +152,7 @@ const StudioDashboard = () => {
         }));
       } catch (err) {
         console.error(err);
+        setLoadError(err instanceof Error ? err.message : "Failed to load services");
       }
     }
     fetchStudio();
@@ -162,6 +168,7 @@ const StudioDashboard = () => {
         setReviews(data);
       } catch (error) {
         console.log(error);
+        setLoadError(error instanceof Error ? error.message : "Failed to load reviews");
       }
     }
     fetchReviews();
@@ -176,10 +183,74 @@ const StudioDashboard = () => {
         setEarnings(data);
       } catch (error) {
         console.log(error);
+        setLoadError(error instanceof Error ? error.message : "Failed to load earnings");
       }
     }
     fetchEarnings();
   }, [studioId]);
+
+  const refreshAll = async () => {
+    if (studioId == null || refreshing) return;
+    setRefreshing(true);
+    setLoadError(null);
+
+    try {
+      const settled = await Promise.allSettled([
+        getBookings(studioId),
+        getStudioProfile(studioId),
+        getServices(studioId),
+        getStudioReview(studioId),
+        getEarningData(studioId),
+      ]);
+
+      const [bookingsRes, profileRes, servicesRes, reviewsRes, earningsRes] =
+        settled;
+
+      if (bookingsRes.status === "fulfilled") setBookings(bookingsRes.value);
+      if (profileRes.status === "fulfilled") {
+        const incoming = (profileRes.value ?? {}) as unknown as Partial<Studio>;
+        setStudioData((prev) => ({
+          ...emptyStudioData,
+          ...prev,
+          ...incoming,
+          contact: {
+            ...emptyStudioData.contact,
+            ...(prev.contact ?? {}),
+            ...(incoming.contact ?? {}),
+          },
+          additionalInfo: {
+            ...emptyStudioData.additionalInfo,
+            ...(prev.additionalInfo ?? {}),
+            ...(incoming.additionalInfo ?? {}),
+          },
+          services: incoming.services ?? prev.services ?? [],
+          equipment: incoming.equipment ?? prev.equipment ?? [],
+          galleryImages: incoming.galleryImages ?? prev.galleryImages ?? [],
+          schedule: incoming.schedule ?? prev.schedule ?? {},
+          studioTypes: incoming.studioTypes ?? prev.studioTypes ?? [],
+          languages: incoming.languages ?? prev.languages ?? [],
+          preferredGenres:
+            incoming.preferredGenres ?? prev.preferredGenres ?? [],
+        }));
+      }
+      if (servicesRes.status === "fulfilled") {
+        setServices(servicesRes.value);
+        setStudioData((prev) => ({ ...prev, services: servicesRes.value }));
+      }
+      if (reviewsRes.status === "fulfilled") setReviews(reviewsRes.value);
+      if (earningsRes.status === "fulfilled") setEarnings(earningsRes.value);
+
+      const firstErr = settled.find((r) => r.status === "rejected") as
+        | PromiseRejectedResult
+        | undefined;
+      if (firstErr) {
+        const reason = firstErr.reason;
+        setLoadError(reason instanceof Error ? reason.message : String(reason));
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // State management
   const [activeTab, setActiveTab] = useState("bookings");
@@ -1109,8 +1180,33 @@ const StudioDashboard = () => {
   // Add this render method for the gamification tab
   const renderGamificationTab = () => <StudioGamification studioId={studioId ?? undefined} />;
 
+  if (studioId == null) {
+    return (
+      <div className="min-h-screen text-white px-4 py-10 max-w-3xl mx-auto">
+        <p className="text-gray-400">
+          Studio dashboard needs a valid `studio_id` in localStorage. Please sign
+          in with a studio account (or create a studio profile) and try again.
+        </p>
+        <Link
+          href="/pages/auth/login"
+          className="inline-flex items-center gap-2 mt-4 text-purple-400 hover:text-purple-300"
+        >
+          Go to login
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="relative">
+      {loadError ? (
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-4">
+          <div className="rounded-lg border border-red-500/40 bg-red-950/40 px-4 py-3 text-sm text-red-200">
+            {loadError}
+          </div>
+        </div>
+      ) : null}
+
       {/* Top Navigation Bar */}
       <div className="relative z-20 w-full">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
@@ -1165,6 +1261,27 @@ const StudioDashboard = () => {
           <div className="flex justify-end items-center space-x-3">
             {/* Notification & Settings */}
             <div className="flex items-center space-x-2">
+              <Link
+                href="/pages/studio/messages"
+                className="lux-btn-ghost inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-white/10 text-sm text-gray-200 hover:text-white hover:border-purple-500/40"
+              >
+                <FaComments className="text-purple-400" />
+                <span className="hidden sm:inline font-special-regular">
+                  {t("common.clientMessages")}
+                </span>
+              </Link>
+              <button
+                type="button"
+                onClick={() => void refreshAll()}
+                disabled={refreshing}
+                className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-transparent px-3 py-2 text-sm text-gray-200 hover:bg-white/5 disabled:opacity-50"
+                aria-label="Refresh dashboard"
+              >
+                <FaSyncAlt className={refreshing ? "animate-spin" : ""} />
+                <span className="hidden sm:inline font-special-regular">
+                  Refresh
+                </span>
+              </button>
               <NotificationDropdown />
             </div>
 

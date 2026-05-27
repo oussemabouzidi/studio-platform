@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { FaArrowRight, FaCheck, FaEnvelope, FaLock, FaUser, FaIdCard, FaMusic, FaBuilding } from 'react-icons/fa';
 import { createAccount, login } from '../service/api';
 import { AuroraBackground } from '@/app/components/aurora-background';
+import ErrorModal from '@/app/components/ErrorModal';
 
 export default function CreateAccountPage() {
   const [firstName, setFirstName] = useState('');
@@ -14,7 +15,35 @@ export default function CreateAccountPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0); // 0 = form, 1 = email sent, 2 = account type selection
+  const [errorModalOpen, setErrorModalOpen] = useState(false);
+  const [errorModalTitle, setErrorModalTitle] = useState('Error');
+  const [errorModalMessage, setErrorModalMessage] = useState('');
   const router = useRouter();  
+
+  const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+  const buildSignupError = (err: unknown) => {
+    const anyErr = err as any;
+    const details = anyErr?.details ?? anyErr?.payload?.error ?? anyErr?.payload ?? null;
+    const code = details?.kind ?? details?.code ?? details?.originalCode ?? anyErr?.code ?? null;
+    const sqlMessage = details?.sqlMessage ?? null;
+
+    const isDuplicateEmail =
+      code === 'DUPLICATE_EMAIL' ||
+      code === 'ER_DUP_ENTRY' ||
+      details?.errno === 1062 ||
+      details?.sqlState === '23000' ||
+      (typeof sqlMessage === 'string' && sqlMessage.toLowerCase().includes('email'));
+
+    const message = isDuplicateEmail
+      ? "This email is already used. Please choose another email."
+      : (anyErr?.message || 'Something went wrong while creating your account.');
+
+    return {
+      title: isDuplicateEmail ? 'Email already in use' : 'Unable to create account',
+      message,
+    };
+  };
 
 
   useEffect(() => {
@@ -39,42 +68,49 @@ export default function CreateAccountPage() {
       alert('Password should be at least 6 characters long');
       return;
     }
+
     setIsLoading(true);
-    // Simulate email sending
-    setTimeout(async () => {
-      setIsLoading(false);
-      
-      const account_id = await createAccount(firstName, lastName, email , password);
+    try {
+      await delay(2000);
+
+      const account_id = await createAccount(firstName, lastName, email, password);
       console.log(account_id);
+
       const res = await login(email, password);
       if (res.success) {
         localStorage.setItem("user_id", res.user_id);
         localStorage.setItem("role", res.role);
       }
+
+      // === Send verification email ===
+      await fetch("/api/sendEmail", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: email,
+          subject: "Verify your email",
+          text: `Hello ${firstName}, please verify your email by clicking this link: https://your-app.com/verify?email=${email}`,
+          html: `
+            <h2>Hello ${firstName},</h2>
+            <p>Thanks for registering. Please verify your email by clicking the button below:</p>
+            <a href="http://localhost:3000/pages/auth/create_account/verify" 
+               style="display:inline-block;padding:10px 20px;background:#0070f3;color:#fff;text-decoration:none;border-radius:6px;">
+              Verify Email
+            </a>
+          `,
+        }),
+      });
+
       setCurrentStep(1);
-      console.log('Verification email sent to:', email);
-    }, 2000);
-
-    // === Send verification email ===
-    await fetch("/api/sendEmail", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        to: email,
-        subject: "Verify your email",
-        text: `Hello ${firstName}, please verify your email by clicking this link: https://your-app.com/verify?email=${email}`,
-        html: `
-          <h2>Hello ${firstName},</h2>
-          <p>Thanks for registering. Please verify your email by clicking the button below:</p>
-          <a href="http://localhost:3000/pages/auth/create_account/verify" 
-             style="display:inline-block;padding:10px 20px;background:#0070f3;color:#fff;text-decoration:none;border-radius:6px;">
-            Verify Email
-          </a>
-        `,
-      }),
-    });
-
-    console.log("Verification email sent to:", email);
+      console.log("Verification email sent to:", email);
+    } catch (err) {
+      const built = buildSignupError(err);
+      setErrorModalTitle(built.title);
+      setErrorModalMessage(built.message);
+      setErrorModalOpen(true);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleBackToLogin = () => {
@@ -93,6 +129,12 @@ export default function CreateAccountPage() {
   return (
     <AuroraBackground>
       <div className="min-h-screen w-full bg-gradient-to-b from-gray-900 to-gray-800 flex flex-col">
+        <ErrorModal
+          open={errorModalOpen}
+          title={errorModalTitle}
+          message={errorModalMessage}
+          onClose={() => setErrorModalOpen(false)}
+        />
         {/* Navbar */}
         <nav className="w-full h-20 py-4">
           <div className="mr-8 ml-8 px-4 flex justify-between items-center">

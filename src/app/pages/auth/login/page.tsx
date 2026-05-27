@@ -46,8 +46,10 @@ export default function LoginPage() {
       // Redirect
       if (res.role === "artist") {
         router.push("/pages/client/studios");
-      } else {
+      } else if (res.role === "studio") {
         router.push("/pages/studio/dashboard");
+      } else {
+        router.push("/pages/client/studios");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : t("auth.loginFailed"));

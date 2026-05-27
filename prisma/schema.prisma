@@ -20,11 +20,11 @@ model User {
   password  String?
   role      Role      @default(CLIENT)
   points    Int       @default(0)
-  badges    String   @default("")
+  badges    String    @default("")
   createdAt DateTime  @default(now())
   bookings  Booking[] // as client
-  studio    Studio?   // if studio user
-  reviews   Review[]  // user reviews
+  studio    Studio? // if studio user
+  reviews   Review[] // user reviews
 }
 
 model Studio {
@@ -33,14 +33,13 @@ model Studio {
   name        String
   description String?
   location    String?
-  photos    String   @default("")
+  photos      String    @default("")
   approved    Boolean   @default(false)
   services    Service[]
   bookings    Booking[] // as provider
   user        User      @relation(fields: [userId], references: [id])
-  reviews     Review[]  // studio reviews
+  reviews     Review[] // studio reviews
 }
-
 
 model Service {
   id          String @id @default(cuid())
@@ -81,4 +80,30 @@ model Review {
   booking Booking @relation(fields: [bookingId], references: [id])
   user    User    @relation(fields: [userId], references: [id])
   studio  Studio  @relation(fields: [studioId], references: [id])
+}
+
+/// Artist–studio chat keyed by numeric IDs from the booking API / localStorage (not Prisma User.id).
+model StudioChatThread {
+  id        Int                 @id @default(autoincrement())
+  studioId  Int                 @map("studio_id")
+  artistId  Int                 @map("artist_id")
+  preview   String?             @db.VarChar(512)
+  createdAt DateTime            @default(now()) @map("created_at")
+  updatedAt DateTime            @updatedAt @map("updated_at")
+  messages  StudioChatMessage[]
+
+  @@unique([studioId, artistId], map: "uq_studio_chat_thread_studio_artist")
+  @@map("studio_chat_threads")
+}
+
+model StudioChatMessage {
+  id        Int              @id @default(autoincrement())
+  threadId  Int              @map("thread_id")
+  thread    StudioChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  sender    String           @db.VarChar(16)
+  body      String           @db.Text
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  @@index([threadId, createdAt], map: "idx_studio_chat_msg_thread_created")
+  @@map("studio_chat_messages")
 }

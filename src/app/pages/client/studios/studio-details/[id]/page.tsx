@@ -21,6 +21,7 @@ import { useRouter } from 'next/navigation';
 import { formatHumanDateSmart, formatHumanTimeRange } from '@/app/lib/datetime';
 import ClientBackdrop from '@/app/components/ClientBackdrop';
 import LuxSpinner from '@/app/components/LuxSpinner';
+import StudioChatPanel from '@/app/components/StudioChatPanel';
 
 
 
@@ -329,7 +330,7 @@ const StudioDetailsPage = () => {
           <div className="lg:col-span-2">
             {/* Tabs */}
             <div className="flex flex-wrap gap-2 mb-6 border-b border-white/10 pb-4">
-              {['overview', 'tour', 'services', 'equipment', 'amenities', 'reviews'].map(tab => (
+              {['overview', 'tour', 'services', 'equipment', 'amenities', 'reviews', 'messages'].map(tab => (
                 <button
                   key={tab}
                   className={
@@ -603,6 +604,28 @@ const StudioDetailsPage = () => {
                       </div>
                     ))}
                   </div>
+                </motion.div>
+              )}
+
+              {/* Messages / studio chat */}
+              {activeTab === 'messages' && studio && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <h2 className="text-2xl font-bold text-white mb-4">
+                    {t('studioDetails.messagesTitle')}
+                  </h2>
+                  <StudioChatPanel
+                    studioId={Number(studio.id)}
+                    studioName={studio.name}
+                    artistId={(() => {
+                      if (artistId == null) return null;
+                      const n = Number(artistId);
+                      return Number.isFinite(n) && n > 0 ? Math.floor(n) : null;
+                    })()}
+                  />
                 </motion.div>
               )}
 

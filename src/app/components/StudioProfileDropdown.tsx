@@ -94,6 +94,19 @@ const StudioProfileDropdown = ({ studioProfile }: StudioProfileDropdownProps) =>
                </Link>
              )}
            </Menu.Item>
+
+          <Menu.Item>
+            {({ active }) => (
+              <Link
+                href="/pages/studio/messages"
+                className={`${
+                  active ? 'bg-gray-700' : ''
+                } block px-4 py-2 text-sm text-gray-300`}
+              >
+                {t('common.clientMessages')}
+              </Link>
+            )}
+          </Menu.Item>
           
           
           <Menu.Item>

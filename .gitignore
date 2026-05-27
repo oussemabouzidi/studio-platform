@@ -46,3 +46,6 @@ next-env.d.ts
 # uploads (local dev)
 /uploads/
 /backend/uploads/
+
+# persisted studio–artist chat (Next.js API file store)
+/.data/

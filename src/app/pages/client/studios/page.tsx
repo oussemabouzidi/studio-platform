@@ -1,9 +1,9 @@
 'use client';
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import PointsSection from '../../../components/PointsSection';
 import ArtistProfileDropdown from '../../../components/ArtistProfileDropdown ';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaMapMarkerAlt, FaStar, FaCalendarAlt, FaClock, FaMusic, FaFilter, FaTimes, FaChevronDown, FaFire } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaStar, FaCalendarAlt, FaClock, FaMusic, FaFilter, FaTimes, FaChevronDown, FaFire, FaSyncAlt } from 'react-icons/fa';
 import NotificationDropdown from '@/app/components/NotificationDropdown';
 import FavoritesLink from '@/app/components/FavoritesLink';
 import {getAllStudios, getBookingsByArtist, getMiniProfile} from '../service/api'
@@ -75,6 +75,7 @@ const StudiosPage = () => {
   const [loading, setLoading] = useState(false);
   const [isFetchingStudios, setIsFetchingStudios] = useState(true);
   const [openFilterCategory, setOpenFilterCategory] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Artist profile data
   const [artistProfile, setArtistProfile] = useState({
@@ -89,60 +90,70 @@ const StudiosPage = () => {
     }
   });
 
+  const fetchStudios = useCallback(async () => {
+    try {
+      setIsFetchingStudios(true);
+      const data = await getAllStudios();
+      setStudios(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsFetchingStudios(false);
+    }
+  }, []);
+
   // Fetching studios
   useEffect(() => {
-    async function fetchStudios() {
-      try {
-        setIsFetchingStudios(true);
-        const data = await getAllStudios();
-        setStudios(data);
-        console.log("studio data is working");
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setIsFetchingStudios(false);
-      }
+    void fetchStudios();
+  }, [fetchStudios]);
+
+  const fetchBookings = useCallback(async () => {
+    try {
+      const id =
+        localStorage.getItem("user_id") ?? localStorage.getItem("artist_id");
+      if (!id) return;
+
+      const data = await getBookingsByArtist(id);
+      setBookings(data);
+    } catch (err) {
+      console.error(err);
     }
-    fetchStudios();
   }, []);
 
   // Fetching bookings
   useEffect(() => {
-    async function fetchBookings() {
-      try {
-        const id =
-          localStorage.getItem("user_id") ?? localStorage.getItem("artist_id");
-        if (!id) return;
+    void fetchBookings();
+  }, [fetchBookings]);
 
-        const data = await getBookingsByArtist(id);
-        setBookings(data);
-        console.log("booking data is working");
-      } catch (err) {
-        console.error(err);
-      }
+  const fetchMiniProfile = useCallback(async () => {
+    try {
+      const rawArtistId = localStorage.getItem("artist_id");
+      if (!rawArtistId) return;
+
+      const artistId = Number(rawArtistId);
+      if (!Number.isFinite(artistId)) return;
+
+      const data = await getMiniProfile(artistId);
+      setArtistProfile(data);
+    } catch (err) {
+      console.error(err);
     }
-    fetchBookings();
   }, []);
 
   // Fetching profile data
   useEffect(() => {
-    async function fetchMiniProfile() {
-      try {
-        const rawArtistId = localStorage.getItem("artist_id");
-        if (!rawArtistId) return;
+    void fetchMiniProfile();
+  }, [fetchMiniProfile]);
 
-        const artistId = Number(rawArtistId);
-        if (!Number.isFinite(artistId)) return;
-
-        const data = await getMiniProfile(artistId);
-        setArtistProfile(data);
-        console.log("profile data is working");
-      } catch (err) {
-        console.error(err);
-      }
+  const refreshAll = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      await Promise.allSettled([fetchStudios(), fetchBookings(), fetchMiniProfile()]);
+    } finally {
+      setRefreshing(false);
     }
-    fetchMiniProfile();
-  }, []);
+  };
 
   const router = useRouter();
 
@@ -657,6 +668,18 @@ const StudiosPage = () => {
 
             <div className="w-full md:w-[35%] flex justify-end items-center space-x-3">
               <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => void refreshAll()}
+                  disabled={refreshing}
+                  className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-transparent px-3 py-2 text-sm text-gray-200 hover:bg-white/5 disabled:opacity-50"
+                  aria-label="Refresh dashboard"
+                >
+                  <FaSyncAlt className={refreshing ? "animate-spin" : ""} />
+                  <span className="hidden sm:inline font-special-regular">
+                    Refresh
+                  </span>
+                </button>
                 <NotificationDropdown />
                 <FavoritesLink />
               </div>
